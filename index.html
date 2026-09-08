@@ -45,7 +45,6 @@
     .pill-btn:active { transform: translateY(3px); box-shadow: 0 2px 0px rgba(0,0,0,0.35); }
     .btn-bot { background: #00E5FF; color: #051923; border-bottom: 4px solid #0097a7; }
     .btn-customize { background: #FFD54F; color: #051923; border-bottom: 4px solid #f57f17; }
-    .btn-party { background: #E91E63; color: #ffffff; border-bottom: 4px solid #880e4f; }
     .btn-leaderboard { background: #9C27B0; color: #ffffff; border-bottom: 4px solid #4a148c; }
     .btn-2p { background: #4CAF50; border-bottom: 4px solid #2e7d32; }
     .btn-3p { background: #FF9800; border-bottom: 4px solid #e65100; }
@@ -217,7 +216,6 @@
     <div class="menu-buttons">
       <button class="pill-btn btn-bot" onclick="openBotModal()">🎮 PLAY WITH BOT</button>
       <button class="pill-btn btn-customize" onclick="openLockerModal()">🎨 AVATAR WARDROBE</button>
-      <button class="pill-btn btn-party" onclick="openPartyModal()">🎉 PARTY & MUTATORS</button>
       <button class="pill-btn btn-leaderboard" onclick="openLeaderboardModal()">🏆 LEADERBOARD</button>
       <button class="pill-btn btn-2p" onclick="startLocalMatch('2p')">⚔️ 2 PLAYERS</button>
       <button class="pill-btn btn-3p" onclick="startLocalMatch('3p')">💥 3 PLAYERS</button>
@@ -293,34 +291,6 @@
       </div>
 
       <button class="pill-btn btn-2p" style="margin-top:6px;" onclick="saveLockerAndClose()">💾 SAVE & CLOSE</button>
-    </div>
-  </div>
-
-  <!-- PARTY & MUTATORS MODAL -->
-  <div class="modal-overlay" id="party-modal">
-    <div class="modal-card">
-      <div class="modal-title">🎉 PARTY MODES & MUTATORS</div>
-
-      <div>
-        <div class="input-label">GAME RULESET / MODE</div>
-        <div class="chip-group">
-          <button class="chip-btn active" id="mode-standard" onclick="selectGameMode('standard')">⚔️ STANDARD</button>
-          <button class="chip-btn" id="mode-sudden_death" onclick="selectGameMode('sudden_death')">🔥 RISING LAVA (SUDDEN DEATH)</button>
-          <button class="chip-btn" id="mode-juggernaut" onclick="selectGameMode('juggernaut')">👑 CROWN KING (JUGGERNAUT)</button>
-          <button class="chip-btn" id="mode-2v2" onclick="selectGameMode('2v2')">🛡️ 2v2 TEAM BRAWL</button>
-        </div>
-      </div>
-
-      <div>
-        <div class="input-label">GAME MUTATORS</div>
-        <div class="chip-group">
-          <button class="chip-btn" id="mutator-moon" onclick="toggleMutator('moonGravity')">🌙 MOON GRAVITY</button>
-          <button class="chip-btn" id="mutator-speed" onclick="toggleMutator('speedDemon')">⚡ SPEED DEMON</button>
-          <button class="chip-btn" id="mutator-onehit" onclick="toggleMutator('oneHitKo')">💀 ONE-HIT KO</button>
-        </div>
-      </div>
-
-      <button class="pill-btn btn-party" style="margin-top:10px;" onclick="closePartyModal()">APPLY & CLOSE</button>
     </div>
   </div>
 
@@ -609,20 +579,6 @@
     function setHumanSlot(slot) { botConfig.humanSlot = slot; [0, 1, 2, 3].forEach(s => { const btn = document.getElementById(`slot-p${s + 1}`); if (btn) btn.classList.toggle('active', s === slot); }); }
     function setBotDifficulty(diff) { botConfig.difficulty = diff; ['easy', 'medium', 'hard'].forEach(d => { const btn = document.getElementById(`diff-${d}`); if (btn) btn.classList.toggle('active', d === diff); }); }
 
-    function openPartyModal() { document.getElementById('party-modal').style.display = 'flex'; }
-    function closePartyModal() { document.getElementById('party-modal').style.display = 'none'; }
-    function selectGameMode(mode) {
-      selectedMode = mode;
-      ['standard', 'sudden_death', 'juggernaut', '2v2'].forEach(m => {
-        const btn = document.getElementById(`mode-${m}`);
-        if (btn) btn.classList.toggle('active', m === mode);
-      });
-    }
-    function toggleMutator(key) {
-      mutators[key] = !mutators[key];
-      const btn = document.getElementById(`mutator-${key === 'moonGravity' ? 'moon' : key === 'speedDemon' ? 'speed' : 'onehit'}`);
-      if (btn) btn.classList.toggle('active', mutators[key]);
-    }
 
     function openLeaderboardModal() { document.getElementById('leaderboard-modal').style.display = 'flex'; fetchLeaderboard(); }
     function closeLeaderboardModal() { document.getElementById('leaderboard-modal').style.display = 'none'; }
