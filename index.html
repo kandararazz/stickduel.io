@@ -148,30 +148,30 @@
 
     /* 4-CORNER TOUCH JOYSTICKS & SPECIAL ABILITY BUTTONS */
     .touch-container {
-      position: absolute; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 10px;
+      position: absolute; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 6px;
     }
-    .touch-p3 { top: 65px; left: 20px; }
-    .touch-p4 { top: 65px; right: 20px; }
-    .touch-p1 { bottom: 20px; left: 20px; }
-    .touch-p2 { bottom: 20px; right: 20px; }
+    .touch-p1 { bottom: 15px; left: 20px; }
+    .touch-p2 { bottom: 15px; right: 20px; }
+    .touch-p3 { bottom: 15px; left: 130px; }
+    .touch-p4 { bottom: 15px; right: 130px; }
 
     .touch-zone {
-      position: relative; width: 130px; height: 130px; border-radius: 50%;
+      position: relative; width: 110px; height: 110px; border-radius: 50%;
       background: rgba(255, 255, 255, 0.15); border: 3px solid rgba(255, 255, 255, 0.4);
       display: flex; align-items: center; justify-content: center; touch-action: none;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 6px 15px rgba(0,0,0,0.3);
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.3);
     }
     .joystick-knob {
-      width: 48px; height: 48px; border-radius: 50%; background: #ffffff;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); transform: translate(0px, 0px); pointer-events: none;
-      border: 3px solid rgba(0,0,0,0.15);
+      width: 42px; height: 42px; border-radius: 50%; background: #ffffff;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.5); transform: translate(0px, 0px); pointer-events: none;
+      border: 2px solid rgba(0,0,0,0.15);
     }
 
     .special-btn {
-      position: relative; width: 56px; height: 56px; border-radius: 50%;
-      background: linear-gradient(135deg, #FFD54F, #FF9800); border: 3px solid #FFFFFF;
-      color: #000; font-size: 1.3rem; font-weight: 900; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); outline: none; touch-action: manipulation;
+      position: relative; width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, #FFD54F, #FF9800); border: 2.5px solid #FFFFFF;
+      color: #000; font-size: 1.1rem; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.4); outline: none; touch-action: manipulation;
     }
     .special-btn:active { transform: scale(0.92); }
 
@@ -215,7 +215,7 @@
 
     <div class="menu-buttons">
       <button class="pill-btn btn-bot" onclick="openBotModal()">🎮 PLAY WITH BOT</button>
-      <button class="pill-btn btn-customize" onclick="openLockerModal()">🎨 AVATAR WARDROBE</button>
+      <button class="pill-btn btn-customize" onclick="openLockerModal()">🎨 AVATAR</button>
       <button class="pill-btn btn-leaderboard" onclick="openLeaderboardModal()">🏆 LEADERBOARD</button>
       <button class="pill-btn btn-2p" onclick="startLocalMatch('2p')">⚔️ 2 PLAYERS</button>
       <button class="pill-btn btn-3p" onclick="startLocalMatch('3p')">💥 3 PLAYERS</button>
@@ -226,7 +226,7 @@
   <!-- LOCKER / WARDROBE MODAL -->
   <div class="modal-overlay" id="locker-modal">
     <div class="modal-card">
-      <div class="modal-title">🎨 AVATAR WARDROBE</div>
+      <div class="modal-title">🎨 AVATAR</div>
 
       <div class="player-tabs">
         <button class="tab-btn active-p0" id="tab-p0" onclick="switchPlayerTab(0)">🔴 P1 RED</button>
@@ -749,9 +749,27 @@
       }
 
       resetPosition(total) {
-        const mainPf = arenaPlatforms[this.index % arenaPlatforms.length];
-        this.x = mainPf.x + mainPf.w / 2;
-        this.y = mainPf.y - 75;
+        const W = canvas.width, H = canvas.height;
+        const mainPf = (arenaPlatforms && arenaPlatforms[0]) ? arenaPlatforms[0] : { x: W * 0.12, y: H * 0.58, w: W * 0.34 };
+        const rightPf = (arenaPlatforms && arenaPlatforms[1]) ? arenaPlatforms[1] : { x: W * 0.54, y: H * 0.58, w: W * 0.34 };
+        const upperPf = (arenaPlatforms && arenaPlatforms[2]) ? arenaPlatforms[2] : { x: W * 0.32, y: H * 0.40, w: W * 0.36 };
+
+        if (this.index === 0) {
+          // P1: Left side of center platform
+          this.x = mainPf.x + 50; this.y = mainPf.y - 34;
+        } else if (this.index === 1) {
+          // P2: Right side of center platform
+          this.x = rightPf.x + rightPf.w - 50; this.y = rightPf.y - 34;
+        } else if (this.index === 2) {
+          // P3: Upper platform left
+          this.x = upperPf.x + 50; this.y = upperPf.y - 34;
+        } else if (this.index === 3) {
+          // P4: Upper platform right
+          this.x = upperPf.x + upperPf.w - 50; this.y = upperPf.y - 34;
+        } else {
+          this.x = mainPf.x + mainPf.w / 2; this.y = mainPf.y - 34;
+        }
+
         this.vx = 0; this.vy = 0;
         this.angle = -Math.PI / 2; this.angularVel = 0;
         this.hp = mutators.oneHitKo ? 1 : selectedMode === 'juggernaut' && this.index === 0 ? 200 : 100;
@@ -900,12 +918,13 @@
         const r = 18;
         const wLine = this.getWeaponLine();
 
+        const footY = this.y + 40;
         arenaPlatforms.forEach(pf => {
-          if (this.x + r > pf.x && this.x - r < pf.x + pf.w) {
-            if (this.y + r > pf.y && this.y - r < pf.y + pf.h) {
-              if (this.vy > 0 && this.y < pf.y + 12) {
-                this.y = pf.y - r;
-                this.vy = -this.vy * 0.2;
+          if (this.x + 20 > pf.x && this.x - 20 < pf.x + pf.w) {
+            if (footY >= pf.y && footY - 20 <= pf.y + pf.h) {
+              if (this.vy > 0) {
+                this.y = pf.y - 40;
+                this.vy = -this.vy * 0.15;
                 this.vx *= 0.85;
 
                 if (pf.jumpPad && Math.abs(this.x - (pf.x + pf.w / 2)) > pf.w / 2 - 25) {
@@ -927,7 +946,7 @@
         });
 
         const lavaY = getLavaY();
-        if (this.y + 20 >= lavaY) {
+        if (this.y + 35 >= lavaY) {
           synth.playExplosion();
           this.takeDamage(999, true);
         }
@@ -961,57 +980,99 @@
       }
 
       getWeaponLine() {
-        const shoulderX = this.x;
-        const shoulderY = this.y - 4;
-        const armLength = 16;
-        const handX = shoulderX + Math.cos(this.angle) * armLength;
-        const handY = shoulderY + Math.sin(this.angle) * armLength;
-        const weaponLength = this.weapon.length;
-        const tipX = handX + Math.cos(this.angle) * weaponLength;
-        const tipY = handY + Math.sin(this.angle) * weaponLength;
+        const aimAngle = this.angle;
+        const shoulderY = this.y - 8;
+        const handX = this.x + Math.cos(aimAngle) * 22;
+        const handY = shoulderY + Math.sin(aimAngle) * 22;
+        const weaponLength = this.weapon.length || 36;
+        const tipX = handX + Math.cos(aimAngle) * weaponLength;
+        const tipY = handY + Math.sin(aimAngle) * weaponLength;
         return { x1: handX, y1: handY, x2: tipX, y2: tipY };
       }
 
       draw() {
         if (this.isDead) return;
         ctx.save();
-        ctx.translate(this.x, this.y);
 
-        if (this.damageFlash > 0 && Math.floor(Date.now() / 40) % 2 === 0) {
-          ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF';
-        } else {
-          ctx.strokeStyle = this.color; ctx.fillStyle = this.color;
-        }
+        const isFlashing = this.damageFlash > 0 && Math.floor(Date.now() / 40) % 2 === 0;
+        const strokeCol = isFlashing ? '#FFFFFF' : this.color;
+        const fillCol = isFlashing ? '#FFFFFF' : this.color;
 
-        ctx.lineWidth = 6; ctx.lineCap = 'round';
+        ctx.strokeStyle = strokeCol;
+        ctx.fillStyle = fillCol;
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-        // 1. TORSO & HEAD
-        ctx.save();
-        ctx.rotate(this.angle + Math.PI / 2);
-        ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(0, 16); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, -26, 14, 0, Math.PI * 2); ctx.fill();
+        // 1. HEAD & EYES
+        const headY = this.y - 24;
+        ctx.beginPath();
+        ctx.arc(this.x, headY, 12, 0, Math.PI * 2);
+        ctx.fill();
 
+        // Facing eye dot
+        const facingRight = Math.cos(this.angle) >= 0;
         ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath(); ctx.arc(-4, -28, 2.5, 0, Math.PI * 2); ctx.arc(4, -28, 2.5, 0, Math.PI * 2); ctx.fill();
-        drawHeadHat(ctx, this.hat, 0, -26);
-        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(this.x + (facingRight ? 4 : -4), headY - 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
 
-        // 2. ARM & WEAPON (STRICTLY LOCKED TO SHOULDER & HAND TRANSFORM)
-        const shoulderX = 0;
-        const shoulderY = -4;
-        const armLength = 16;
-        const handX = shoulderX + Math.cos(this.angle) * armLength;
-        const handY = shoulderY + Math.sin(this.angle) * armLength;
+        drawHeadHat(ctx, this.hat, this.x, headY);
 
-        ctx.strokeStyle = this.color;
-        ctx.beginPath(); ctx.moveTo(shoulderX, shoulderY); ctx.lineTo(handX, handY); ctx.stroke();
+        // 2. TORSO / SPINE
+        const neckY = this.y - 12;
+        const hipY = this.y + 12;
+        ctx.strokeStyle = strokeCol;
+        ctx.beginPath();
+        ctx.moveTo(this.x, neckY);
+        ctx.lineTo(this.x, hipY);
+        ctx.stroke();
 
+        // 3. TWO RAGDOLL LEGS (Dynamic sway based on velocity)
+        const sway = Math.sin(Date.now() * 0.008) * 4 - (this.vx * 1.2);
+        // Left Leg (Hip -> Knee -> Foot)
+        ctx.beginPath();
+        ctx.moveTo(this.x, hipY);
+        ctx.lineTo(this.x - 7 + sway, hipY + 14);
+        ctx.lineTo(this.x - 10 + sway * 1.3, hipY + 28);
+        ctx.stroke();
+
+        // Right Leg (Hip -> Knee -> Foot)
+        ctx.beginPath();
+        ctx.moveTo(this.x, hipY);
+        ctx.lineTo(this.x + 7 - sway, hipY + 14);
+        ctx.lineTo(this.x + 10 - sway * 1.3, hipY + 28);
+        ctx.stroke();
+
+        // 4. ARMS & WEAPON HAND (Aim direction)
+        const shoulderY = this.y - 8;
+        const aimAngle = this.angle;
+        const handX = this.x + Math.cos(aimAngle) * 22;
+        const handY = shoulderY + Math.sin(aimAngle) * 22;
+
+        ctx.beginPath();
+        ctx.moveTo(this.x, shoulderY);
+        ctx.lineTo(handX, handY);
+        ctx.stroke();
+
+        // 5. WEAPON (Mounted directly to the hand)
         ctx.save();
         ctx.translate(handX, handY);
-        ctx.rotate(this.angle);
-        ctx.lineWidth = 5;
+        ctx.rotate(aimAngle);
+
         ctx.strokeStyle = this.weapon.isLegendary ? '#FFD700' : '#00E5FF';
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(this.weapon.length, 0); ctx.stroke();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(this.weapon.length || 36, 0); // Weapon blade/shaft
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ECEFF1';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(-6, 0);
+        ctx.lineTo(2, 0); // Hilt
+        ctx.stroke();
         ctx.restore();
 
         this.drawHUDTags();
@@ -1019,16 +1080,30 @@
       }
 
       drawHUDTags() {
-        const barW = 56, barH = 8;
-        const bx = this.x - barW / 2, by = this.y - 54;
-        ctx.fillStyle = '#FFFFFF'; ctx.font = '900 11px Outfit, sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(this.name.toUpperCase(), this.x, by - 6);
+        const barWidth = 46;
+        const barHeight = 6;
+        const barX = this.x - barWidth / 2;
+        const barY = this.y - 48; // Exactly 48px above character center
 
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.beginPath(); ctx.roundRect(bx - 2, by - 2, barW + 4, barH + 4, 6); ctx.fill();
-        const pct = Math.max(0, this.hp / this.maxHp);
-        ctx.fillStyle = pct > 0.5 ? '#4CAF50' : pct > 0.25 ? '#FF9800' : '#E53935';
-        ctx.beginPath(); ctx.roundRect(bx, by, barW * pct, barH, 4); ctx.fill();
+        // 1. Player Name
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.name, this.x, barY - 4);
+
+        // 2. Health Bar Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+
+        // 3. Current Health Fill (Green -> Yellow -> Red)
+        const hpRatio = Math.max(0, this.hp / this.maxHp);
+        ctx.fillStyle = hpRatio > 0.5 ? '#4CAF50' : (hpRatio > 0.25 ? '#FF9800' : '#F44336');
+        ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+
+        // 4. White Border
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barWidth, barHeight);
       }
     }
 
@@ -1082,16 +1157,65 @@
     // LIVE WARDROBE PREVIEW
     function updateLockerPreview() {
       previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-      const cx = previewCanvas.width / 2, cy = previewCanvas.height / 2 + 10;
-      const bob = Math.sin(Date.now() * 0.005) * 4;
+      const cx = previewCanvas.width / 2, cy = previewCanvas.height / 2 + 5;
+      const bob = Math.sin(Date.now() * 0.005) * 3;
       const curProfile = playerProfiles[activePlayerTab];
-      previewCtx.save(); previewCtx.translate(cx, cy + bob);
-      previewCtx.strokeStyle = curProfile.color; previewCtx.fillStyle = curProfile.color; previewCtx.lineWidth = 5;
-      previewCtx.beginPath(); previewCtx.moveTo(-5, 14); previewCtx.lineTo(-10, 32); previewCtx.stroke();
-      previewCtx.beginPath(); previewCtx.moveTo(5, 14); previewCtx.lineTo(10, 32); previewCtx.stroke();
-      previewCtx.beginPath(); previewCtx.moveTo(0, -10); previewCtx.lineTo(0, 14); previewCtx.stroke();
-      previewCtx.beginPath(); previewCtx.arc(0, -26, 12, 0, Math.PI * 2); previewCtx.fill();
-      drawHeadHat(previewCtx, curProfile.hat, 0, -26);
+      previewCtx.save();
+      previewCtx.translate(cx, cy + bob);
+      previewCtx.strokeStyle = curProfile.color;
+      previewCtx.fillStyle = curProfile.color;
+      previewCtx.lineWidth = 5;
+      previewCtx.lineCap = 'round';
+      previewCtx.lineJoin = 'round';
+
+      // 1. Head & Eye
+      const headY = -24;
+      previewCtx.beginPath();
+      previewCtx.arc(0, headY, 12, 0, Math.PI * 2);
+      previewCtx.fill();
+
+      previewCtx.fillStyle = '#FFFFFF';
+      previewCtx.beginPath();
+      previewCtx.arc(4, headY - 2, 2.5, 0, Math.PI * 2);
+      previewCtx.fill();
+
+      drawHeadHat(previewCtx, curProfile.hat, 0, headY);
+
+      // 2. Torso / Spine
+      const neckY = -12;
+      const hipY = 12;
+      previewCtx.strokeStyle = curProfile.color;
+      previewCtx.beginPath();
+      previewCtx.moveTo(0, neckY);
+      previewCtx.lineTo(0, hipY);
+      previewCtx.stroke();
+
+      // 3. Legs
+      previewCtx.beginPath();
+      previewCtx.moveTo(0, hipY); previewCtx.lineTo(-7, hipY + 14); previewCtx.lineTo(-10, hipY + 28);
+      previewCtx.moveTo(0, hipY); previewCtx.lineTo(7, hipY + 14); previewCtx.lineTo(10, hipY + 28);
+      previewCtx.stroke();
+
+      // 4. Arm & Weapon
+      const shoulderY = -8;
+      const handX = 22;
+      const handY = shoulderY + 8;
+      previewCtx.beginPath();
+      previewCtx.moveTo(0, shoulderY); previewCtx.lineTo(handX, handY);
+      previewCtx.stroke();
+
+      // 5. Weapon
+      previewCtx.save();
+      previewCtx.translate(handX, handY);
+      previewCtx.rotate(0.3);
+      previewCtx.lineWidth = 4;
+      previewCtx.strokeStyle = '#00E5FF';
+      previewCtx.beginPath(); previewCtx.moveTo(0, 0); previewCtx.lineTo(32, 0); previewCtx.stroke();
+      previewCtx.strokeStyle = '#ECEFF1';
+      previewCtx.lineWidth = 6;
+      previewCtx.beginPath(); previewCtx.moveTo(-6, 0); previewCtx.lineTo(2, 0); previewCtx.stroke();
+      previewCtx.restore();
+
       previewCtx.restore();
     }
     setInterval(updateLockerPreview, 50);
