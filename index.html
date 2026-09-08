@@ -200,6 +200,57 @@
       background: radial-gradient(circle, transparent 50%, rgba(255, 0, 85, 0.6) 100%);
       opacity: 0; transition: opacity 0.1s ease;
     }
+
+    /* COIN ECONOMY & WEAPON STORE STYLES */
+    .coin-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, rgba(255, 213, 79, 0.2), rgba(255, 152, 0, 0.2));
+      border: 1.5px solid #FFD54F; color: #FFD54F; font-size: 0.95rem; font-weight: 900;
+      padding: 6px 14px; border-radius: 20px; box-shadow: 0 0 10px rgba(255, 213, 79, 0.3);
+    }
+    .coin-badge-top {
+      position: absolute; top: 18px; right: 20px; z-index: 105;
+    }
+    .weapon-grid-container {
+      display: flex; flex-direction: column; gap: 8px; width: 100%;
+    }
+    .weapon-grid-header {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+    }
+    .weapon-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;
+      max-height: 220px; overflow-y: auto; padding: 6px; border-radius: 14px;
+      background: rgba(10, 18, 36, 0.6); border: 1px solid rgba(0, 229, 255, 0.25);
+    }
+    .weapon-card {
+      background: rgba(255, 255, 255, 0.06); border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: all 0.15s ease; position: relative;
+    }
+    .weapon-card.equipped { border-color: #00E5FF; background: rgba(0, 229, 255, 0.15); box-shadow: 0 0 12px rgba(0, 229, 255, 0.4); }
+    .weapon-card.unlocked { border-color: rgba(255, 255, 255, 0.4); }
+    .weapon-card.locked { border-color: rgba(255, 213, 79, 0.4); background: rgba(0, 0, 0, 0.3); }
+    .weapon-icon { font-size: 1.4rem; line-height: 1; }
+    .weapon-name { font-size: 0.72rem; font-weight: 900; text-align: center; color: #FFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+    .weapon-tag { font-size: 0.65rem; font-weight: 900; color: #94A3B8; }
+    .btn-buy {
+      background: linear-gradient(135deg, #FFD54F, #FF9800); color: #051923; font-weight: 900;
+      border: none; padding: 4px 10px; border-radius: 10px; cursor: pointer; font-size: 0.72rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.1s ease;
+    }
+    .btn-buy:active { transform: scale(0.92); }
+    .btn-equip {
+      background: #00E5FF; color: #051923; font-weight: 900;
+      border: none; padding: 4px 10px; border-radius: 10px; cursor: pointer; font-size: 0.72rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.1s ease;
+    }
+    .btn-equip:active { transform: scale(0.92); }
+    .shake-card { animation: cardShake 0.4s ease; border-color: #FF2A54 !important; }
+    @keyframes cardShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
   </style>
 </head>
 <body>
@@ -210,6 +261,7 @@
 
   <!-- HOME MAIN MENU -->
   <div id="main-menu">
+    <div class="coin-badge coin-badge-top">🪙 <span id="menu-coin-count">1000</span></div>
     <div class="title-logo">STICK<span>DUEL.IO</span></div>
     <div class="author-badge">⚡ CREATED BY RAZA ⚡</div>
 
@@ -226,7 +278,10 @@
   <!-- LOCKER / WARDROBE MODAL -->
   <div class="modal-overlay" id="locker-modal">
     <div class="modal-card">
-      <div class="modal-title">🎨 AVATAR</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <div class="modal-title" style="margin:0;">🎨 AVATAR & ARSENAL</div>
+        <div class="coin-badge">🪙 <span id="locker-coin-count">1000</span></div>
+      </div>
 
       <div class="player-tabs">
         <button class="tab-btn active-p0" id="tab-p0" onclick="switchPlayerTab(0)">🔴 P1 RED</button>
@@ -280,14 +335,16 @@
         </div>
       </div>
 
-      <div>
-        <div class="input-label">STARTING WEAPON</div>
-        <div class="chip-group" id="weapon-selector">
-          <button class="chip-btn active" data-weapon="katana" onclick="setCurrentProfileWeapon('katana')">🗡️ KATANA</button>
-          <button class="chip-btn" data-weapon="hammer" onclick="setCurrentProfileWeapon('hammer')">🔨 HAMMER</button>
-          <button class="chip-btn" data-weapon="spear" onclick="setCurrentProfileWeapon('spear')">🔱 SPEAR</button>
-          <button class="chip-btn" data-weapon="sickle" onclick="setCurrentProfileWeapon('sickle')">🪓 SICKLES</button>
+      <div class="weapon-grid-container">
+        <div class="weapon-grid-header">
+          <div class="input-label">⚔️ WEAPON ARSENAL (100)</div>
+          <div class="chip-group" style="gap:4px;">
+            <button class="chip-btn active" id="wf-all" onclick="setWeaponFilter('all')">ALL (100)</button>
+            <button class="chip-btn" id="wf-unlocked" onclick="setWeaponFilter('unlocked')">UNLOCKED</button>
+            <button class="chip-btn" id="wf-store" onclick="setWeaponFilter('store')">STORE / LOCKED</button>
+          </div>
         </div>
+        <div class="weapon-grid" id="weapon-store-grid"></div>
       </div>
 
       <button class="pill-btn btn-2p" style="margin-top:6px;" onclick="saveLockerAndClose()">💾 SAVE & CLOSE</button>
@@ -374,6 +431,7 @@
   <div id="winner-modal">
     <div class="winner-card">
       <div class="winner-title" id="winner-text">PLAYER 1 WINS!</div>
+      <div id="winner-coin-badge" class="coin-badge" style="font-size:1.15rem; padding:6px 18px; display:none;">+500 🪙 COINS EARNED!</div>
       <div class="author-badge">CREATED BY RAZA</div>
       <button class="next-round-btn" onclick="startNextRound()">NEXT ROUND ➔</button>
       <button class="chip-btn" style="background:transparent; border:none; color:#94A3B8; margin-top:8px;" onclick="exitToHome()">HOME MENU</button>
@@ -553,7 +611,7 @@
     // -------------------------------------------------------------
     // MODAL CONTROL FUNCTIONS
     // -------------------------------------------------------------
-    function openLockerModal() { document.getElementById('locker-modal').style.display = 'flex'; switchPlayerTab(activePlayerTab); }
+    function openLockerModal() { document.getElementById('locker-modal').style.display = 'flex'; updateCoinDisplays(); switchPlayerTab(activePlayerTab); renderWeaponStore(); }
     function saveLockerAndClose() { savePlayerProfile(activePlayerTab, playerProfiles[activePlayerTab]); document.getElementById('locker-modal').style.display = 'none'; }
     function switchPlayerTab(index) { activePlayerTab = index; refreshTabUI(); }
     function refreshTabUI() {
@@ -566,12 +624,18 @@
       if (nameInput) nameInput.value = p.name;
       document.querySelectorAll('#color-palette .color-swatch').forEach(sw => sw.classList.toggle('active', sw.getAttribute('data-color') === p.color));
       document.querySelectorAll('#hat-selector .chip-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-hat') === p.hat));
-      document.querySelectorAll('#weapon-selector .chip-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-weapon') === p.weapon));
+      renderWeaponStore();
     }
     function updateCurrentProfileName() { const val = document.getElementById('locker-name-input').value.trim(); playerProfiles[activePlayerTab].name = val || `Player ${activePlayerTab + 1}`; }
     function setCurrentProfileColor(color) { playerProfiles[activePlayerTab].color = color; refreshTabUI(); }
     function setCurrentProfileHat(hat) { playerProfiles[activePlayerTab].hat = hat; refreshTabUI(); }
-    function setCurrentProfileWeapon(weapon) { playerProfiles[activePlayerTab].weapon = weapon; refreshTabUI(); }
+    function setCurrentProfileWeapon(weapon) {
+      if (!unlockedWeapons.includes(weapon)) return;
+      playerProfiles[activePlayerTab].weapon = weapon;
+      saveAllProfiles();
+      refreshTabUI();
+      renderWeaponStore();
+    }
 
     function openBotModal() { document.getElementById('bot-modal').style.display = 'flex'; }
     function closeBotModal() { document.getElementById('bot-modal').style.display = 'none'; }
@@ -706,18 +770,234 @@
     }
 
     // -------------------------------------------------------------
-    // WEAPONS ARSENAL & LEGENDARIES
+    // 100-WEAPON ARSENAL (50 FREE + 50 PREMIUM STORE WEAPONS)
     // -------------------------------------------------------------
-    const WEAPONS = {
-      katana: { name: 'Energy Katana', length: 50, damage: 25, knockback: 15, drag: 0.94, thrustBonus: 1.6 },
-      hammer: { name: 'War Hammer', length: 42, damage: 35, knockback: 24, drag: 0.90, thrustBonus: 1.3 },
-      spear: { name: 'Dragon Spear', length: 65, damage: 30, knockback: 18, drag: 0.94, thrustBonus: 1.8 },
-      sickle: { name: 'Dual Sickle', length: 45, damage: 25, knockback: -10, drag: 0.94, thrustBonus: 1.6 },
-      laser_blaster: { name: 'Laser Gun', length: 36, damage: 35, knockback: 20, drag: 0.95, thrustBonus: 1.5, isLegendary: true },
-      energy_shield: { name: 'Energy Shield', length: 38, damage: 15, knockback: 30, drag: 0.96, thrustBonus: 1.4, isLegendary: true },
-      boxing_gloves: { name: 'Boxing Gloves', length: 32, damage: 28, knockback: 32, drag: 0.94, thrustBonus: 1.7, isLegendary: true },
-      portal_wand: { name: 'Portal Wand', length: 44, damage: 20, knockback: 12, drag: 0.94, thrustBonus: 1.6, isLegendary: true }
-    };
+    const WEAPONS_CATALOG = [
+      // 50 FREE STARTER WEAPONS (Unlocked by default, price: 0)
+      { id: 'katana', name: 'Iron Katana', emoji: '🗡️', price: 0, length: 38, damage: 25, knockback: 15, drag: 0.94, thrustBonus: 1.6, color: '#00E5FF' },
+      { id: 'bokken', name: 'Wooden Bokken', emoji: '🪵', price: 0, length: 36, damage: 20, knockback: 16, drag: 0.94, thrustBonus: 1.5, color: '#D97706' },
+      { id: 'rusty_broadsword', name: 'Rusty Broadsword', emoji: '⚔️', price: 0, length: 40, damage: 26, knockback: 18, drag: 0.93, thrustBonus: 1.5, color: '#9CA3AF' },
+      { id: 'tanto', name: 'Ninja Tanto', emoji: '🥷', price: 0, length: 32, damage: 22, knockback: 12, drag: 0.95, thrustBonus: 1.7, color: '#4B5563' },
+      { id: 'cutlass', name: 'Cutlass', emoji: '🏴‍☠️', price: 0, length: 36, damage: 24, knockback: 15, drag: 0.94, thrustBonus: 1.6, color: '#38BDF8' },
+      { id: 'rapier', name: 'Rapier', emoji: '🤺', price: 0, length: 42, damage: 21, knockback: 14, drag: 0.95, thrustBonus: 1.8, color: '#F1F5F9' },
+      { id: 'gladius', name: 'Gladius', emoji: '🛡️', price: 0, length: 34, damage: 23, knockback: 14, drag: 0.94, thrustBonus: 1.6, color: '#E2E8F0' },
+      { id: 'scimitar', name: 'Scimitar', emoji: '🗡️', price: 0, length: 38, damage: 25, knockback: 16, drag: 0.94, thrustBonus: 1.6, color: '#38BDF8' },
+      { id: 'machete', name: 'Machete', emoji: '🔪', price: 0, length: 36, damage: 24, knockback: 15, drag: 0.94, thrustBonus: 1.6, color: '#64748B' },
+      { id: 'claymore', name: 'Claymore', emoji: '🗡️', price: 0, length: 44, damage: 28, knockback: 20, drag: 0.92, thrustBonus: 1.4, color: '#94A3B8' },
+      { id: 'dagger', name: 'Dagger', emoji: '🗡️', price: 0, length: 30, damage: 20, knockback: 10, drag: 0.96, thrustBonus: 1.8, color: '#CBD5E1' },
+      { id: 'dirk', name: 'Dirk', emoji: '🗡️', price: 0, length: 32, damage: 21, knockback: 12, drag: 0.95, thrustBonus: 1.7, color: '#94A3B8' },
+      { id: 'falchion', name: 'Falchion', emoji: '⚔️', price: 0, length: 38, damage: 25, knockback: 16, drag: 0.94, thrustBonus: 1.6, color: '#64748B' },
+      { id: 'saber', name: 'Saber', emoji: '🤺', price: 0, length: 38, damage: 23, knockback: 15, drag: 0.94, thrustBonus: 1.7, color: '#E2E8F0' },
+      { id: 'kunai', name: 'Twin Kunai', emoji: '🥷', price: 0, length: 30, damage: 22, knockback: 12, drag: 0.95, thrustBonus: 1.7, color: '#38BDF8' },
+      { id: 'hammer', name: 'Blacksmith Hammer', emoji: '🔨', price: 0, length: 36, damage: 32, knockback: 22, drag: 0.91, thrustBonus: 1.3, color: '#F59E0B' },
+      { id: 'stone_club', name: 'Stone Club', emoji: '🪨', price: 0, length: 38, damage: 30, knockback: 24, drag: 0.90, thrustBonus: 1.2, color: '#78716C' },
+      { id: 'wooden_mallet', name: 'Wooden Mallet', emoji: '🔨', price: 0, length: 36, damage: 27, knockback: 20, drag: 0.92, thrustBonus: 1.4, color: '#B45309' },
+      { id: 'flail', name: 'Flail', emoji: '⛓️', price: 0, length: 40, damage: 29, knockback: 21, drag: 0.92, thrustBonus: 1.4, color: '#6B7280' },
+      { id: 'baseball_bat', name: 'Baseball Bat', emoji: '🏏', price: 0, length: 38, damage: 25, knockback: 23, drag: 0.93, thrustBonus: 1.5, color: '#D97706' },
+      { id: 'cricket_bat', name: 'Cricket Bat', emoji: '🏏', price: 0, length: 38, damage: 26, knockback: 22, drag: 0.93, thrustBonus: 1.5, color: '#F59E0B' },
+      { id: 'baton', name: 'Police Baton', emoji: '👮', price: 0, length: 34, damage: 22, knockback: 18, drag: 0.94, thrustBonus: 1.6, color: '#1E293B' },
+      { id: 'crowbar', name: 'Crowbar', emoji: '🔧', price: 0, length: 36, damage: 25, knockback: 19, drag: 0.93, thrustBonus: 1.5, color: '#E11D48' },
+      { id: 'lead_pipe', name: 'Lead Pipe', emoji: '🚰', price: 0, length: 36, damage: 24, knockback: 18, drag: 0.93, thrustBonus: 1.5, color: '#64748B' },
+      { id: 'mace', name: 'Spiked Mace', emoji: '🪨', price: 0, length: 38, damage: 31, knockback: 23, drag: 0.91, thrustBonus: 1.3, color: '#475569' },
+      { id: 'morning_star', name: 'Morning Star', emoji: '🌟', price: 0, length: 40, damage: 32, knockback: 24, drag: 0.91, thrustBonus: 1.3, color: '#F59E0B' },
+      { id: 'quarterstaff', name: 'Quarterstaff', emoji: '🪵', price: 0, length: 44, damage: 22, knockback: 17, drag: 0.94, thrustBonus: 1.6, color: '#92400E' },
+      { id: 'wrench', name: 'Heavy Wrench', emoji: '🔧', price: 0, length: 34, damage: 26, knockback: 20, drag: 0.93, thrustBonus: 1.4, color: '#475569' },
+      { id: 'spear', name: 'Iron Spear', emoji: '🔱', price: 0, length: 46, damage: 28, knockback: 17, drag: 0.94, thrustBonus: 1.8, color: '#10B981' },
+      { id: 'bamboo_pike', name: 'Bamboo Pike', emoji: '🎋', price: 0, length: 48, damage: 24, knockback: 15, drag: 0.94, thrustBonus: 1.9, color: '#84CC16' },
+      { id: 'trident', name: 'Fishing Trident', emoji: '🎣', price: 0, length: 46, damage: 27, knockback: 18, drag: 0.94, thrustBonus: 1.7, color: '#06B6D4' },
+      { id: 'halberd', name: 'Halberd', emoji: '🪓', price: 0, length: 48, damage: 30, knockback: 20, drag: 0.92, thrustBonus: 1.6, color: '#64748B' },
+      { id: 'pitchfork', name: 'Pitchfork', emoji: '🌾', price: 0, length: 44, damage: 23, knockback: 16, drag: 0.94, thrustBonus: 1.7, color: '#D97706' },
+      { id: 'billhook', name: 'Billhook', emoji: '🪓', price: 0, length: 42, damage: 26, knockback: 17, drag: 0.93, thrustBonus: 1.6, color: '#475569' },
+      { id: 'naginata', name: 'Naginata', emoji: '⚔️', price: 0, length: 48, damage: 28, knockback: 18, drag: 0.93, thrustBonus: 1.7, color: '#EC4899' },
+      { id: 'glaive', name: 'Glaive', emoji: '🗡️', price: 0, length: 46, damage: 27, knockback: 17, drag: 0.93, thrustBonus: 1.7, color: '#8B5CF6' },
+      { id: 'partisan', name: 'Partisan', emoji: '🔱', price: 0, length: 46, damage: 26, knockback: 16, drag: 0.94, thrustBonus: 1.7, color: '#6366F1' },
+      { id: 'guisarme', name: 'Guisarme', emoji: '🪓', price: 0, length: 46, damage: 27, knockback: 18, drag: 0.93, thrustBonus: 1.6, color: '#475569' },
+      { id: 'harpoon', name: 'Harpoon', emoji: '⚓', price: 0, length: 44, damage: 26, knockback: 17, drag: 0.94, thrustBonus: 1.7, color: '#0284C7' },
+      { id: 'lance', name: 'Lance', emoji: '🏇', price: 0, length: 50, damage: 29, knockback: 21, drag: 0.92, thrustBonus: 1.9, color: '#F43F5E' },
+      { id: 'sickle', name: 'Dual Sickles', emoji: '🪓', price: 0, length: 34, damage: 23, knockback: 14, drag: 0.94, thrustBonus: 1.6, color: '#E11D48' },
+      { id: 'frying_pan', name: 'Frying Pan', emoji: '🍳', price: 0, length: 32, damage: 25, knockback: 22, drag: 0.93, thrustBonus: 1.4, color: '#334155' },
+      { id: 'broomstick', name: 'Broomstick', emoji: '🧹', price: 0, length: 42, damage: 20, knockback: 16, drag: 0.94, thrustBonus: 1.6, color: '#B45309' },
+      { id: 'umbrella', name: 'Umbrella', emoji: '☂️', price: 0, length: 40, damage: 21, knockback: 15, drag: 0.94, thrustBonus: 1.6, color: '#8B5CF6' },
+      { id: 'tennis_racket', name: 'Tennis Racket', emoji: '🎾', price: 0, length: 36, damage: 22, knockback: 20, drag: 0.94, thrustBonus: 1.6, color: '#84CC16' },
+      { id: 'guitar', name: 'Acoustic Guitar', emoji: '🎸', price: 0, length: 38, damage: 27, knockback: 23, drag: 0.91, thrustBonus: 1.3, color: '#D97706' },
+      { id: 'golf_club', name: 'Golf Club', emoji: '⛳', price: 0, length: 40, damage: 24, knockback: 21, drag: 0.94, thrustBonus: 1.6, color: '#94A3B8' },
+      { id: 'anchor', name: 'Iron Anchor', emoji: '⚓', price: 0, length: 38, damage: 33, knockback: 26, drag: 0.89, thrustBonus: 1.2, color: '#475569' },
+      { id: 'pickaxe', name: 'Mining Pickaxe', emoji: '⛏️', price: 0, length: 38, damage: 28, knockback: 19, drag: 0.92, thrustBonus: 1.5, color: '#F59E0B' },
+      { id: 'shovel', name: 'Steel Shovel', emoji: '🪵', price: 0, length: 40, damage: 25, knockback: 20, drag: 0.92, thrustBonus: 1.5, color: '#64748B' },
+
+      // 50 PREMIUM STORE WEAPONS (Require Coins to unlock)
+      // Rare Tier (51-70, 1000 - 2500 Coins)
+      { id: 'cyber_katana', name: 'Cyber Katana', emoji: '⚡', price: 1000, length: 42, damage: 30, knockback: 18, drag: 0.95, thrustBonus: 1.7, color: '#00E5FF', isLegendary: true },
+      { id: 'plasma_saber', name: 'Plasma Saber', emoji: '🌌', price: 1200, length: 40, damage: 31, knockback: 19, drag: 0.95, thrustBonus: 1.7, color: '#A855F7', isLegendary: true },
+      { id: 'laser_halberd', name: 'Laser Halberd', emoji: '💫', price: 1400, length: 48, damage: 32, knockback: 22, drag: 0.93, thrustBonus: 1.6, color: '#38BDF8', isLegendary: true },
+      { id: 'void_blade', name: 'Void Blade', emoji: '🔮', price: 1500, length: 42, damage: 33, knockback: 19, drag: 0.95, thrustBonus: 1.7, color: '#C084FC', isLegendary: true },
+      { id: 'tesla_baton', name: 'Tesla Baton', emoji: '⚡', price: 1600, length: 36, damage: 29, knockback: 24, drag: 0.94, thrustBonus: 1.6, color: '#FACC15', isLegendary: true },
+      { id: 'nano_scythe', name: 'Nano Scythe', emoji: '🤖', price: 1700, length: 44, damage: 32, knockback: 18, drag: 0.94, thrustBonus: 1.7, color: '#34D399', isLegendary: true },
+      { id: 'photon_glaive', name: 'Photon Glaive', emoji: '💡', price: 1800, length: 46, damage: 31, knockback: 20, drag: 0.94, thrustBonus: 1.7, color: '#60A5FA', isLegendary: true },
+      { id: 'quantum_hammer', name: 'Quantum Hammer', emoji: '⚛️', price: 2000, length: 40, damage: 36, knockback: 26, drag: 0.91, thrustBonus: 1.4, color: '#818CF8', isLegendary: true },
+      { id: 'neon_dual_edge', name: 'Neon Dual Edge', emoji: '🌟', price: 2200, length: 42, damage: 33, knockback: 20, drag: 0.95, thrustBonus: 1.7, color: '#F472B6', isLegendary: true },
+      { id: 'pulse_blade', name: 'Pulse Blade', emoji: '📡', price: 2300, length: 40, damage: 32, knockback: 19, drag: 0.95, thrustBonus: 1.7, color: '#22D3EE', isLegendary: true },
+      { id: 'mech_saw', name: 'Mech Saw', emoji: '⚙️', price: 2400, length: 38, damage: 34, knockback: 21, drag: 0.93, thrustBonus: 1.5, color: '#FB923C', isLegendary: true },
+      { id: 'digital_dagger', name: 'Digital Dagger', emoji: '💻', price: 2500, length: 34, damage: 30, knockback: 15, drag: 0.96, thrustBonus: 1.9, color: '#4ADE80', isLegendary: true },
+      { id: 'hyper_saber', name: 'Hyper Saber', emoji: '🚀', price: 2500, length: 42, damage: 33, knockback: 20, drag: 0.95, thrustBonus: 1.7, color: '#F87171', isLegendary: true },
+      { id: 'sonic_spear', name: 'Sonic Spear', emoji: '🔊', price: 2500, length: 48, damage: 32, knockback: 22, drag: 0.94, thrustBonus: 1.8, color: '#38BDF8', isLegendary: true },
+      { id: 'astro_club', name: 'Astro Club', emoji: '☄️', price: 2500, length: 40, damage: 35, knockback: 25, drag: 0.92, thrustBonus: 1.4, color: '#FB7185', isLegendary: true },
+      { id: 'inferno_blade', name: 'Inferno Blade', emoji: '🔥', price: 2500, length: 42, damage: 35, knockback: 21, drag: 0.94, thrustBonus: 1.7, color: '#EF4444', isLegendary: true },
+      { id: 'frostbite_dagger', name: 'Frostbite Dagger', emoji: '❄️', price: 2500, length: 34, damage: 31, knockback: 16, drag: 0.96, thrustBonus: 1.8, color: '#06B6D4', isLegendary: true },
+      { id: 'thunder_hammer', name: 'Thunder Hammer', emoji: '⚡', price: 2500, length: 40, damage: 38, knockback: 27, drag: 0.91, thrustBonus: 1.4, color: '#F59E0B', isLegendary: true },
+      { id: 'solar_spear', name: 'Solar Spear', emoji: '☀️', price: 2500, length: 48, damage: 34, knockback: 21, drag: 0.94, thrustBonus: 1.8, color: '#FBBF24', isLegendary: true },
+      { id: 'toxic_flail', name: 'Toxic Flail', emoji: '☣️', price: 2500, length: 42, damage: 34, knockback: 23, drag: 0.92, thrustBonus: 1.5, color: '#22C55E', isLegendary: true },
+
+      // Epic Tier (71-85, 3000 - 5000 Coins)
+      { id: 'cursed_scythe', name: 'Cursed Scythe', emoji: '☠️', price: 3000, length: 46, damage: 36, knockback: 22, drag: 0.94, thrustBonus: 1.7, color: '#7E22CE', isLegendary: true },
+      { id: 'venom_fang', name: 'Venom Fang', emoji: '🐍', price: 3200, length: 36, damage: 33, knockback: 18, drag: 0.95, thrustBonus: 1.8, color: '#15803D', isLegendary: true },
+      { id: 'lava_broadsword', name: 'Lava Broadsword', emoji: '🌋', price: 3500, length: 44, damage: 37, knockback: 24, drag: 0.93, thrustBonus: 1.6, color: '#DC2626', isLegendary: true },
+      { id: 'glacial_glaive', name: 'Glacial Glaive', emoji: '🧊', price: 3800, length: 48, damage: 35, knockback: 22, drag: 0.94, thrustBonus: 1.7, color: '#0EA5E9', isLegendary: true },
+      { id: 'tempest_trident', name: 'Tempest Trident', emoji: '🌪️', price: 4000, length: 48, damage: 36, knockback: 23, drag: 0.94, thrustBonus: 1.8, color: '#0284C7', isLegendary: true },
+      { id: 'eclipse_katana', name: 'Eclipse Katana', emoji: '🌘', price: 4200, length: 44, damage: 37, knockback: 22, drag: 0.95, thrustBonus: 1.8, color: '#475569', isLegendary: true },
+      { id: 'phoenix_rapier', name: 'Phoenix Rapier', emoji: '🦅', price: 4500, length: 44, damage: 34, knockback: 20, drag: 0.95, thrustBonus: 1.9, color: '#F97316', isLegendary: true },
+      { id: 'shadow_blade', name: 'Shadow Blade', emoji: '👤', price: 4800, length: 42, damage: 36, knockback: 21, drag: 0.95, thrustBonus: 1.8, color: '#1E293B', isLegendary: true },
+      { id: 'lightbringer', name: 'Lightbringer', emoji: '🕯️', price: 5000, length: 44, damage: 38, knockback: 23, drag: 0.95, thrustBonus: 1.8, color: '#FEF08A', isLegendary: true },
+      { id: 'dragon_tooth', name: 'Dragon Tooth', emoji: '🐉', price: 5000, length: 42, damage: 39, knockback: 24, drag: 0.94, thrustBonus: 1.7, color: '#B91C1C', isLegendary: true },
+      { id: 'dragon_slayer', name: 'Dragon Slayer Greatsword', emoji: '🐲', price: 5000, length: 48, damage: 40, knockback: 26, drag: 0.91, thrustBonus: 1.5, color: '#991B1B', isLegendary: true },
+      { id: 'excalibur', name: 'Excalibur', emoji: '🗡️', price: 5000, length: 46, damage: 40, knockback: 25, drag: 0.95, thrustBonus: 1.8, color: '#FBBF24', isLegendary: true },
+      { id: 'mjolnir', name: 'Mjolnir', emoji: '🔨', price: 5000, length: 40, damage: 42, knockback: 30, drag: 0.90, thrustBonus: 1.4, color: '#60A5FA', isLegendary: true },
+      { id: 'poseidon_trident', name: 'Poseidon\'s Trident', emoji: '🧜‍♂️', price: 5000, length: 50, damage: 38, knockback: 25, drag: 0.94, thrustBonus: 1.8, color: '#06B6D4', isLegendary: true },
+      { id: 'reaper_scythe', name: 'Reaper\'s Scythe', emoji: '💀', price: 5000, length: 48, damage: 40, knockback: 24, drag: 0.94, thrustBonus: 1.7, color: '#A855F7', isLegendary: true },
+
+      // Legendary / God Tier (86-100, 6000 - 12000 Coins)
+      { id: 'chaos_mace', name: 'Chaos Mace', emoji: '💥', price: 6000, length: 42, damage: 41, knockback: 28, drag: 0.91, thrustBonus: 1.4, color: '#E11D48', isLegendary: true },
+      { id: 'celestial_lance', name: 'Celestial Lance', emoji: '✨', price: 6500, length: 50, damage: 39, knockback: 24, drag: 0.94, thrustBonus: 1.9, color: '#FDE047', isLegendary: true },
+      { id: 'god_of_war_axe', name: 'God of War Axe', emoji: '🪓', price: 7000, length: 46, damage: 43, knockback: 28, drag: 0.92, thrustBonus: 1.6, color: '#B91C1C', isLegendary: true },
+      { id: 'valkyrie_sword', name: 'Valkyrie Sword', emoji: '🛡️', price: 7500, length: 44, damage: 40, knockback: 23, drag: 0.95, thrustBonus: 1.8, color: '#38BDF8', isLegendary: true },
+      { id: 'titan_smasher', name: 'Titan Smasher', emoji: '🧱', price: 8000, length: 44, damage: 45, knockback: 32, drag: 0.89, thrustBonus: 1.3, color: '#78716C', isLegendary: true },
+      { id: 'omega_blaster', name: 'Omega Blaster', emoji: '💥', price: 8500, length: 40, damage: 42, knockback: 27, drag: 0.94, thrustBonus: 1.7, color: '#FF0055', isLegendary: true },
+      { id: 'archangel_blade', name: 'Archangel Blade', emoji: '👼', price: 9000, length: 46, damage: 42, knockback: 25, drag: 0.95, thrustBonus: 1.8, color: '#FFFBEB', isLegendary: true },
+      { id: 'leviathan_harpoon', name: 'Leviathan Harpoon', emoji: '🐋', price: 9500, length: 50, damage: 41, knockback: 26, drag: 0.94, thrustBonus: 1.8, color: '#0369A1', isLegendary: true },
+      { id: 'chrono_wand', name: 'Chrono Wand', emoji: '⏳', price: 10000, length: 44, damage: 40, knockback: 22, drag: 0.95, thrustBonus: 1.8, color: '#D97706', isLegendary: true },
+      { id: 'starlight_scimitar', name: 'Starlight Scimitar', emoji: '🌌', price: 10500, length: 44, damage: 42, knockback: 24, drag: 0.95, thrustBonus: 1.8, color: '#C084FC', isLegendary: true },
+      { id: 'void_annihilator', name: 'Void Annihilator', emoji: '🕳️', price: 11000, length: 46, damage: 45, knockback: 29, drag: 0.94, thrustBonus: 1.8, color: '#6B21A8', isLegendary: true },
+      { id: 'infinity_fist', name: 'Infinity Gauntlet Fist', emoji: '💎', price: 11500, length: 38, damage: 46, knockback: 32, drag: 0.94, thrustBonus: 1.9, color: '#F59E0B', isLegendary: true },
+      { id: 'golden_god_katana', name: 'Golden God Katana', emoji: '👑', price: 12000, length: 46, damage: 46, knockback: 28, drag: 0.95, thrustBonus: 1.9, color: '#FFD700', isLegendary: true },
+      { id: 'black_hole_staff', name: 'Black Hole Staff', emoji: '🌑', price: 12000, length: 48, damage: 45, knockback: 28, drag: 0.94, thrustBonus: 1.8, color: '#0F172A', isLegendary: true },
+      { id: 'supreme_scythe', name: 'Supreme Ruler Scythe', emoji: '⚜️', price: 12000, length: 48, damage: 46, knockback: 30, drag: 0.94, thrustBonus: 1.9, color: '#EAB308', isLegendary: true }
+    ];
+
+    const WEAPONS = {};
+    WEAPONS_CATALOG.forEach(w => { WEAPONS[w.id] = w; });
+    const DEFAULT_FREE_WEAPON_IDS = WEAPONS_CATALOG.filter(w => w.price === 0).map(w => w.id);
+
+    // -------------------------------------------------------------
+    // COIN ECONOMY & ARSENAL UNLOCK STATE
+    // -------------------------------------------------------------
+    let playerCoins = parseInt(localStorage.getItem('stick_duel_coins')) || 1000;
+    let unlockedWeapons = [];
+    try {
+      const savedWeapons = localStorage.getItem('stick_duel_weapons');
+      if (savedWeapons) unlockedWeapons = JSON.parse(savedWeapons);
+    } catch(e) {}
+    if (!Array.isArray(unlockedWeapons) || unlockedWeapons.length === 0) {
+      unlockedWeapons = [...DEFAULT_FREE_WEAPON_IDS];
+    }
+
+    function saveCoins() {
+      try { localStorage.setItem('stick_duel_coins', playerCoins.toString()); } catch(e) {}
+      updateCoinDisplays();
+    }
+
+    function saveUnlockedWeapons() {
+      try { localStorage.setItem('stick_duel_weapons', JSON.stringify(unlockedWeapons)); } catch(e) {}
+    }
+
+    function updateCoinDisplays() {
+      const elMenu = document.getElementById('menu-coin-count');
+      const elLocker = document.getElementById('locker-coin-count');
+      if (elMenu) elMenu.innerText = playerCoins.toLocaleString();
+      if (elLocker) elLocker.innerText = playerCoins.toLocaleString();
+    }
+
+    let currentWeaponFilter = 'all'; // 'all', 'unlocked', 'store'
+
+    function setWeaponFilter(filter) {
+      currentWeaponFilter = filter;
+      ['all', 'unlocked', 'store'].forEach(f => {
+        const btn = document.getElementById(`wf-${f}`);
+        if (btn) btn.classList.toggle('active', f === filter);
+      });
+      renderWeaponStore();
+    }
+
+    function renderWeaponStore() {
+      const grid = document.getElementById('weapon-store-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const activeWeapon = playerProfiles[activePlayerTab] ? playerProfiles[activePlayerTab].weapon : 'katana';
+
+      WEAPONS_CATALOG.forEach(w => {
+        const isUnlocked = unlockedWeapons.includes(w.id);
+        const isEquipped = activeWeapon === w.id;
+
+        if (currentWeaponFilter === 'unlocked' && !isUnlocked) return;
+        if (currentWeaponFilter === 'store' && isUnlocked) return;
+
+        const card = document.createElement('div');
+        card.className = `weapon-card ${isEquipped ? 'equipped' : isUnlocked ? 'unlocked' : 'locked'}`;
+
+        let statusHtml = '';
+        if (isEquipped) {
+          statusHtml = `<button class="chip-btn active" style="padding:3px 8px; font-size:0.72rem; cursor:default;">EQUIPPED</button>`;
+        } else if (isUnlocked) {
+          statusHtml = `<button class="btn-equip" onclick="setCurrentProfileWeapon('${w.id}')">EQUIP</button>`;
+        } else {
+          statusHtml = `<button class="btn-buy" onclick="buyWeapon('${w.id}', this)">🪙 ${w.price.toLocaleString()}</button>`;
+        }
+
+        const tierLabel = w.price === 0 ? 'FREE' : w.price < 3000 ? 'RARE' : w.price < 6000 ? 'EPIC' : 'GOD TIER';
+
+        card.innerHTML = `
+          <div class="weapon-icon">${w.emoji}</div>
+          <div class="weapon-name" title="${w.name}">${w.name}</div>
+          <div class="weapon-tag">${tierLabel}</div>
+          ${statusHtml}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function buyWeapon(weaponId, btnElem) {
+      const weapon = WEAPONS[weaponId];
+      if (!weapon) return;
+      if (unlockedWeapons.includes(weaponId)) {
+        setCurrentProfileWeapon(weaponId);
+        return;
+      }
+      if (playerCoins >= weapon.price) {
+        playerCoins -= weapon.price;
+        unlockedWeapons.push(weaponId);
+        saveCoins();
+        saveUnlockedWeapons();
+        synth.playChime();
+        setCurrentProfileWeapon(weaponId);
+        renderWeaponStore();
+      } else {
+        synth.playExplosion();
+        const card = btnElem ? btnElem.closest('.weapon-card') : null;
+        if (card) {
+          card.classList.add('shake-card');
+          setTimeout(() => card.classList.remove('shake-card'), 450);
+        }
+        if (btnElem) {
+          const origText = btnElem.innerText;
+          btnElem.innerText = 'NOT ENOUGH!';
+          btnElem.style.background = '#FF2A54'; btnElem.style.color = '#FFF';
+          setTimeout(() => {
+            btnElem.innerText = origText;
+            btnElem.style.background = ''; btnElem.style.color = '';
+          }, 1200);
+        }
+      }
+    }
     const BOT_NAMES = ['Bot Alpha', 'Bot Striker', 'Bot Titan', 'Bot Viper'];
 
     // -------------------------------------------------------------
@@ -1308,12 +1588,26 @@
       if (livingPlayers.length <= 1) {
         gameState = 'ROUND_OVER';
         let winnerText = "DRAW MATCH!";
+        let earnedCoinsText = "";
+
         if (livingPlayers.length === 1) {
           const winner = livingPlayers[0];
           playerScores[winner.index]++;
           winnerText = `${winner.name.toUpperCase()} WINS!`;
           updateScoreboard();
           recordMatchResult(winner.index, players);
+
+          if (!winner.isBot) {
+            playerCoins += 500;
+            saveCoins();
+            earnedCoinsText = "+500 🪙 COINS EARNED!";
+            synth.playChime();
+
+            // Gold particle shower
+            for (let k = 0; k < 25; k++) {
+              particles.push(new Particle(canvas.width / 2 + (Math.random() - 0.5) * 200, canvas.height / 2 + (Math.random() - 0.5) * 100, '#FFD54F'));
+            }
+          }
         }
 
         // Slow motion finish vignette
@@ -1323,6 +1617,11 @@
         roundEndTimer = setTimeout(() => {
           if (gameState === 'MENU') return; // Cancel popup if player returned to menu
           document.getElementById('winner-text').innerText = winnerText;
+          const coinBadgeElem = document.getElementById('winner-coin-badge');
+          if (coinBadgeElem) {
+            coinBadgeElem.innerText = earnedCoinsText;
+            coinBadgeElem.style.display = earnedCoinsText ? 'block' : 'none';
+          }
           document.getElementById('winner-modal').style.display = 'flex';
         }, 800);
       }
@@ -1513,6 +1812,7 @@
 
     // STARTUP INITIALIZATION
     loadSavedProfiles();
+    updateCoinDisplays();
     generateNewProceduralArena();
     requestAnimationFrame(render);
   </script>
