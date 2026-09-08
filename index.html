@@ -366,6 +366,145 @@
     const previewCanvas = document.getElementById('preview-canvas');
     const previewCtx = previewCanvas.getContext('2d');
 
+    // -------------------------------------------------------------
+    // GLOBAL STATE & PLAYER PROFILES
+    // -------------------------------------------------------------
+    let playerProfiles = [
+      { name: 'Player 1', color: '#111111', hat: 'none', weapon: 'katana' },
+      { name: 'Player 2', color: '#E53935', hat: 'none', weapon: 'katana' },
+      { name: 'Player 3', color: '#4CAF50', hat: 'none', weapon: 'katana' },
+      { name: 'Player 4', color: '#FFD54F', hat: 'none', weapon: 'katana' }
+    ];
+    let activePlayerTab = 0;
+    let botConfig = { playerCount: 2, humanSlot: 0, difficulty: 'medium' };
+    let currentMode = '2p';
+    let playerCount = 2;
+    let playerScores = [0, 0, 0, 0];
+    let players = [];
+    let particles = [];
+    let isRoundOver = false;
+    let hitstopFrames = 0;
+    let screenShakeTime = 0;
+
+    function saveAllProfiles() {
+      try {
+        localStorage.setItem('supreme_duelist_profiles', JSON.stringify(playerProfiles));
+      } catch(e) {}
+    }
+
+    function loadAllProfiles() {
+      try {
+        const saved = localStorage.getItem('supreme_duelist_profiles');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length >= 4) {
+            playerProfiles = parsed;
+          }
+        }
+      } catch(e) {}
+    }
+
+    // -------------------------------------------------------------
+    // LOCKER / FIGHTER WARDROBE MODAL HANDLERS
+    // -------------------------------------------------------------
+    function openLockerModal() {
+      document.getElementById('locker-modal').style.display = 'flex';
+      switchPlayerTab(activePlayerTab);
+    }
+
+    function saveLockerAndClose() {
+      savePlayerProfile(activePlayerTab, playerProfiles[activePlayerTab]);
+      document.getElementById('locker-modal').style.display = 'none';
+    }
+
+    function switchPlayerTab(index) {
+      activePlayerTab = index;
+      refreshTabUI();
+    }
+
+    function refreshTabUI() {
+      for (let i = 0; i < 4; i++) {
+        const tabBtn = document.getElementById(`tab-p${i}`);
+        if (tabBtn) {
+          tabBtn.className = `tab-btn ${i === activePlayerTab ? 'active-p' + i : ''}`;
+        }
+      }
+
+      const p = playerProfiles[activePlayerTab];
+      const nameInput = document.getElementById('locker-name-input');
+      if (nameInput) nameInput.value = p.name;
+
+      // Color Swatches
+      document.querySelectorAll('#color-palette .color-swatch').forEach(swatch => {
+        swatch.classList.toggle('active', swatch.getAttribute('data-color') === p.color);
+      });
+
+      // Hats
+      document.querySelectorAll('#hat-selector .chip-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-hat') === p.hat);
+      });
+
+      // Weapons
+      document.querySelectorAll('#weapon-selector .chip-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-weapon') === p.weapon);
+      });
+    }
+
+    function updateCurrentProfileName() {
+      const val = document.getElementById('locker-name-input').value.trim();
+      playerProfiles[activePlayerTab].name = val || `Player ${activePlayerTab + 1}`;
+    }
+
+    function setCurrentProfileColor(color) {
+      playerProfiles[activePlayerTab].color = color;
+      refreshTabUI();
+    }
+
+    function setCurrentProfileHat(hat) {
+      playerProfiles[activePlayerTab].hat = hat;
+      refreshTabUI();
+    }
+
+    function setCurrentProfileWeapon(weapon) {
+      playerProfiles[activePlayerTab].weapon = weapon;
+      refreshTabUI();
+    }
+
+    // -------------------------------------------------------------
+    // BOT MATCH SETUP MODAL HANDLERS
+    // -------------------------------------------------------------
+    function openBotModal() {
+      document.getElementById('bot-modal').style.display = 'flex';
+    }
+
+    function closeBotModal() {
+      document.getElementById('bot-modal').style.display = 'none';
+    }
+
+    function setBotPlayerCount(count) {
+      botConfig.playerCount = count;
+      [2, 3, 4].forEach(c => {
+        const btn = document.getElementById(`bot-count-${c}`);
+        if (btn) btn.classList.toggle('active', c === count);
+      });
+    }
+
+    function setHumanSlot(slot) {
+      botConfig.humanSlot = slot;
+      [0, 1, 2, 3].forEach(s => {
+        const btn = document.getElementById(`slot-p${s + 1}`);
+        if (btn) btn.classList.toggle('active', s === slot);
+      });
+    }
+
+    function setBotDifficulty(diff) {
+      botConfig.difficulty = diff;
+      ['easy', 'medium', 'hard'].forEach(d => {
+        const btn = document.getElementById(`diff-${d}`);
+        if (btn) btn.classList.toggle('active', d === diff);
+      });
+    }
+
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
