@@ -251,6 +251,25 @@
       20%, 60% { transform: translateX(-6px); }
       40%, 80% { transform: translateX(6px); }
     }
+
+    /* SUDDEN DEATH & TIMER STYLES */
+    .sudden-death-banner {
+      position: absolute; top: 62px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, #E53935, #B71C1C); border: 2px solid #FFFFFF; color: #FFFFFF;
+      font-size: 1.05rem; font-weight: 900; padding: 6px 22px; border-radius: 24px;
+      box-shadow: 0 0 20px rgba(229, 57, 53, 0.9); display: none; animation: bannerPulse 0.6s infinite alternate;
+      z-index: 35; text-transform: uppercase; letter-spacing: 1px;
+    }
+    @keyframes bannerPulse {
+      0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 10px rgba(229, 57, 53, 0.6); }
+      100% { transform: translateX(-50%) scale(1.06); box-shadow: 0 0 25px rgba(229, 57, 53, 1); }
+    }
+    .hud-timer {
+      font-size: 0.9rem; font-weight: 900; color: #FFD54F;
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+      border: 1.5px solid rgba(255, 213, 79, 0.4); padding: 4px 14px; border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -404,9 +423,11 @@
   <div id="in-game-hud">
     <div class="top-bar-hud">
       <button class="home-btn" onclick="exitToHome()">🏠 HOME</button>
+      <div class="hud-timer" id="match-timer">⏱️ 00:00</div>
       <div class="hud-author">CREATED BY RAZA</div>
       <div class="scoreboard" id="scoreboard"></div>
     </div>
+    <div id="sudden-death-banner" class="sudden-death-banner">⚠️ SUDDEN DEATH: LAVA RISING!</div>
 
     <!-- 4-CORNER TOUCH JOYSTICKS & SPECIAL BUTTONS -->
     <div class="touch-container touch-p3" id="touch-p3" style="display:none;">
@@ -477,9 +498,9 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.12);
-          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
           osc.connect(gain); gain.connect(this.ctx.destination);
           osc.start(); osc.stop(this.ctx.currentTime + 0.12);
@@ -488,45 +509,79 @@
       playClash() {
         if (!this.ctx) return;
         try {
+          // Metallic frequency ping (triangle wave pitch drop 1200Hz -> 180Hz over 0.08s)
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
           osc.connect(gain); gain.connect(this.ctx.destination);
           osc.start(); osc.stop(this.ctx.currentTime + 0.08);
+
+          // White noise burst
+          const bufferSize = this.ctx.sampleRate * 0.05;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+          noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+          noise.connect(noiseGain); noiseGain.connect(this.ctx.destination);
+          noise.start();
         } catch(e) {}
       }
-      playExplosion() {
+      playLavaSizzle() {
         if (!this.ctx) return;
         try {
+          // Low-frequency rumble decaying with sizzle noise
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.35);
-          gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+          osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.45, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
           osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(this.ctx.currentTime + 0.35);
+          osc.start(); osc.stop(this.ctx.currentTime + 0.4);
+
+          // Sizzle noise
+          const bufferSize = this.ctx.sampleRate * 0.25;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+          const noiseGain = this.ctx.createGain();
+          noiseGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+          noise.connect(noiseGain); noiseGain.connect(this.ctx.destination);
+          noise.start();
         } catch(e) {}
       }
-      playChime() {
+      playCoinChime() {
         if (!this.ctx) return;
         try {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(1200, this.ctx.currentTime + 0.2);
-          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+          const t = this.ctx.currentTime;
+          // Two-tone melodic bell ping (987Hz -> 1318Hz)
+          const osc1 = this.ctx.createOscillator();
+          const gain1 = this.ctx.createGain();
+          osc1.type = 'sine'; osc1.frequency.setValueAtTime(987, t);
+          gain1.gain.setValueAtTime(0.3, t); gain1.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+          osc1.connect(gain1); gain1.connect(this.ctx.destination);
+          osc1.start(t); osc1.stop(t + 0.1);
+
+          const osc2 = this.ctx.createOscillator();
+          const gain2 = this.ctx.createGain();
+          osc2.type = 'sine'; osc2.frequency.setValueAtTime(1318, t + 0.08);
+          gain2.gain.setValueAtTime(0.35, t + 0.08); gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.24);
+          osc2.connect(gain2); gain2.connect(this.ctx.destination);
+          osc2.start(t + 0.08); osc2.stop(t + 0.24);
         } catch(e) {}
       }
+      playChime() { this.playCoinChime(); }
+      playExplosion() { this.playLavaSizzle(); }
     }
     const synth = new SoundSynth();
     window.addEventListener('click', () => synth.init(), { once: true });
@@ -558,13 +613,83 @@
     let particles = [];
     let limbDebris = [];
     let projectiles = [];
-    let supplyBalloons = [];
-    let explosiveBarrels = [];
-    let laserGates = [];
-    let nextBalloonTimer = 0;
+    let supplyCrates = [];
+    let nextCrateSpawnTime = 0;
 
     let hitstopFrames = 0;
     let screenShakeTime = 0;
+
+    function getWeaponCategory(id) {
+      if (!id) return 'katana';
+      const name = id.toLowerCase();
+      if (name.includes('hammer') || name.includes('club') || name.includes('mace') || name.includes('bat') || name.includes('pipe') || name.includes('crowbar') || name.includes('mallet') || name.includes('flail') || name.includes('fist') || name.includes('wrench') || name.includes('pan') || name.includes('guitar') || name.includes('anchor') || name.includes('smasher')) return 'hammer';
+      if (name.includes('spear') || name.includes('pike') || name.includes('trident') || name.includes('lance') || name.includes('halberd') || name.includes('glaive') || name.includes('harpoon') || name.includes('pitchfork')) return 'spear';
+      if (name.includes('scythe') || name.includes('sickle')) return 'sickle';
+      return 'katana';
+    }
+
+    class SupplyCrate {
+      constructor() {
+        this.x = 80 + Math.random() * (canvas.width - 160);
+        this.y = -40;
+        this.vy = 1.2;
+        this.swayAngle = Math.random() * Math.PI * 2;
+        this.swaySpeed = 0.04;
+        this.radius = 20;
+        this.isBroken = false;
+        const types = ['shield', 'thruster', 'health', 'coins'];
+        this.type = types[Math.floor(Math.random() * types.length)];
+      }
+
+      update() {
+        if (this.isBroken) return;
+        this.y += this.vy;
+        this.swayAngle += this.swaySpeed;
+        this.x += Math.sin(this.swayAngle) * 0.8;
+
+        const lavaY = getLavaY();
+        if (this.y >= lavaY - 15) {
+          this.isBroken = true;
+          for (let i = 0; i < 8; i++) particles.push(new Particle(this.x, this.y, '#D97706'));
+        }
+      }
+
+      draw() {
+        if (this.isBroken) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Parachute ropes
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-16, -20); ctx.lineTo(-8, -4);
+        ctx.moveTo(16, -20); ctx.lineTo(8, -4);
+        ctx.stroke();
+
+        // Parachute dome
+        ctx.fillStyle = '#FF5252';
+        ctx.beginPath();
+        ctx.arc(0, -20, 18, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.stroke();
+
+        // Wooden Crate
+        ctx.fillStyle = '#D97706'; ctx.fillRect(-12, -4, 24, 20);
+        ctx.strokeStyle = '#FEF08A'; ctx.lineWidth = 2; ctx.strokeRect(-12, -4, 24, 20);
+
+        // Emoji label
+        let emoji = '🎁';
+        if (this.type === 'shield') emoji = '🛡️';
+        else if (this.type === 'thruster') emoji = '🚀';
+        else if (this.type === 'health') emoji = '💊';
+        else if (this.type === 'coins') emoji = '💰';
+
+        ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(emoji, 0, 6);
+
+        ctx.restore();
+      }
+    }
     let activeKeys = {};
 
     window.addEventListener('keydown', (e) => {
@@ -1006,7 +1131,7 @@
     class Player {
       constructor(index, total, isBot, customName, customColor, customHat, customWeapon) {
         this.index = index; this.name = customName; this.color = customColor;
-        this.hat = customHat; this.weaponType = customWeapon; this.weapon = WEAPONS[customWeapon];
+        this.hat = customHat; this.weaponType = customWeapon; this.weapon = WEAPONS[customWeapon] || WEAPONS['katana'];
         this.isBot = isBot;
 
         this.hp = mutators.oneHitKo ? 1 : selectedMode === 'juggernaut' && index === 0 ? 200 : 100;
@@ -1021,6 +1146,13 @@
 
         this.specialCooldown = 0;
         this.specialActiveFrames = 0;
+
+        this.invulnerableTimer = 0;
+        this.shieldHits = 0;
+        this.superThrusterTimer = 0;
+        this.dragonLungeTimer = 0;
+        this.vortexTimer = 0;
+        this.isSlamming = false;
 
         this.botAimAngle = -Math.PI / 2;
         this.botAimTimer = 0;
@@ -1055,6 +1187,8 @@
         this.hp = mutators.oneHitKo ? 1 : selectedMode === 'juggernaut' && this.index === 0 ? 200 : 100;
         this.isDead = false; this.damageFlash = 0;
         this.specialCooldown = 0; this.specialActiveFrames = 0;
+        this.invulnerableTimer = 0; this.shieldHits = 0; this.superThrusterTimer = 0;
+        this.dragonLungeTimer = 0; this.vortexTimer = 0; this.isSlamming = false;
       }
 
       updateInput() {
@@ -1112,7 +1246,7 @@
         if (inputMag > 0.1) {
           const targetAngle = Math.atan2(inputY, inputX);
           this.angle = lerpAngle(this.angle, targetAngle, 0.22);
-          let thrust = this.weapon.thrustBonus * (mutators.speedDemon ? 2.0 : 1.0);
+          let thrust = (this.weapon ? this.weapon.thrustBonus : 1.6) * (mutators.speedDemon ? 2.0 : 1.0) * (this.superThrusterTimer > 0 ? 2.0 : 1.0);
           if (this.isBot) thrust *= (botConfig.difficulty === 'easy' ? 0.75 : botConfig.difficulty === 'hard' ? 1.35 : 1.0);
 
           this.vx += Math.cos(this.angle) * thrust;
@@ -1127,52 +1261,59 @@
 
       triggerSpecial() {
         if (this.isDead || this.specialCooldown > 0 || gameState !== 'PLAYING') return;
-        this.specialCooldown = 300; // 5 second cooldown
-        this.specialActiveFrames = 18;
-        synth.playChime();
+        this.specialCooldown = 280; // ~4.6 second cooldown
+        this.specialActiveFrames = 20;
 
-        if (this.weaponType === 'katana') {
-          // Shadow Dash: teleport forward + slash line
-          this.vx += Math.cos(this.angle) * 22;
-          this.vy += Math.sin(this.angle) * 22;
-          for (let s = 0; s < 12; s++) particles.push(new Particle(this.x, this.y, '#00E5FF'));
-        } else if (this.weaponType === 'hammer') {
-          // Ground Slam Shockwave
-          this.vy = 22;
-          for (let p = 0; p < arenaPlatforms.length; p++) {
-            const pf = arenaPlatforms[p];
-            if (Math.abs(this.x - (pf.x + pf.w / 2)) < pf.w / 2 + 50) {
-              screenShakeTime = 14;
-              synth.playExplosion();
-              players.forEach(v => {
-                if (v !== this && !v.isDead && Math.abs(v.y - pf.y) < 60) {
-                  v.vy = -16; v.takeDamage(20);
-                }
-              });
-            }
-          }
-        } else if (this.weaponType === 'spear') {
-          // Javelin Lunge
-          this.vx += Math.cos(this.angle) * 26;
-          this.vy += Math.sin(this.angle) * 26;
-        } else if (this.weaponType === 'sickle') {
-          // Whirlwind Spin
-          this.angularVel = 1.2;
-          players.forEach(v => {
-            if (v !== this && !v.isDead && Math.hypot(v.x - this.x, v.y - this.y) < 140) {
-              let angle = Math.atan2(this.y - v.y, this.x - v.x);
-              v.vx += Math.cos(angle) * 12; v.vy += Math.sin(angle) * 12;
+        const category = getWeaponCategory(this.weaponType);
+        synth.playCoinChime();
+
+        if (category === 'katana') {
+          // SHADOW FLASH: Teleport 160px forward + slash opponents + 0.3s invulnerability
+          const dashDist = 160;
+          const startX = this.x, startY = this.y;
+          const endX = this.x + Math.cos(this.angle) * dashDist;
+          const endY = this.y + Math.sin(this.angle) * dashDist;
+
+          this.x = Math.min(Math.max(30, endX), canvas.width - 30);
+          this.y = Math.min(Math.max(35, endY), canvas.height - 35);
+          this.vx = Math.cos(this.angle) * 14;
+          this.vy = Math.sin(this.angle) * 14;
+          this.invulnerableTimer = 18; // 0.3s invulnerability
+
+          players.forEach(victim => {
+            if (victim !== this && !victim.isDead && (this.team === null || victim.team !== this.team)) {
+              if (lineIntersectsCircle(startX, startY, this.x, this.y, victim.x, victim.y, 32)) {
+                victim.takeDamage(35);
+                victim.vx += Math.cos(this.angle) * 22;
+                victim.vy += Math.sin(this.angle) * 22;
+                for (let s = 0; s < 12; s++) particles.push(new Particle(victim.x, victim.y, '#00E5FF'));
+              }
             }
           });
-        } else if (this.weaponType === 'laser_blaster') {
-          // Shoot Laser Bolt
-          projectiles.push(new LaserBolt(this.x, this.y, this.angle, this.index));
-          this.vx -= Math.cos(this.angle) * 8;
-        } else if (this.weaponType === 'portal_wand') {
-          // Teleport to top safe platform
-          const pf = arenaPlatforms[2] || arenaPlatforms[0];
-          this.x = pf.x + pf.w / 2; this.y = pf.y - 60; this.vx = 0; this.vy = 0;
-          for (let i = 0; i < 16; i++) particles.push(new Particle(this.x, this.y, '#9C27B0'));
+          for (let s = 0; s < 18; s++) {
+            const t = Math.random();
+            particles.push(new Particle(startX + (this.x - startX) * t, startY + (this.y - startY) * t, '#00E5FF'));
+          }
+          synth.playSwoosh();
+        } else if (category === 'hammer') {
+          // SEISMIC SLAM: Accelerates downward 3x speed + radial shockwave on platform hit
+          this.vy = 28;
+          this.isSlamming = true;
+          synth.playSwoosh();
+        } else if (category === 'spear') {
+          // DRAGON LUNGE: 120px extended thrust with 3x knockback force
+          const lungeSpeed = 24;
+          this.vx += Math.cos(this.angle) * lungeSpeed;
+          this.vy += Math.sin(this.angle) * lungeSpeed;
+          this.dragonLungeTimer = 22;
+          this.invulnerableTimer = 10;
+          for (let s = 0; s < 14; s++) particles.push(new Particle(this.x, this.y, '#10B981'));
+          synth.playSwoosh();
+        } else if (category === 'sickle') {
+          // VORTEX WHIRLWIND: 720° spin over 0.5s + deflects strikes + pulls enemies in
+          this.vortexTimer = 30; // 0.5s @ 60fps
+          this.invulnerableTimer = 30;
+          synth.playSwoosh();
         }
       }
 
@@ -1184,8 +1325,8 @@
 
         const grav = mutators.moonGravity ? 0.08 : 0.25;
         this.vy += grav;
-        this.vx *= this.weapon.drag;
-        this.vy *= this.weapon.drag;
+        this.vx *= (this.weapon ? this.weapon.drag : 0.94);
+        this.vy *= (this.weapon ? this.weapon.drag : 0.94);
 
         this.x += this.vx;
         this.y += this.vy;
@@ -1195,14 +1336,49 @@
         if (this.x > canvas.width - 30) { this.x = canvas.width - 30; this.vx = -this.vx * bounceDamping; }
         if (this.y < 35) { this.y = 35; this.vy = -this.vy * bounceDamping; }
 
-        const r = 18;
-        const wLine = this.getWeaponLine();
+        if (this.invulnerableTimer > 0) this.invulnerableTimer--;
+        if (this.dragonLungeTimer > 0) this.dragonLungeTimer--;
+
+        if (this.superThrusterTimer > 0) {
+          this.superThrusterTimer--;
+          if (Math.hypot(this.vx, this.vy) > 0.5 && Math.random() < 0.6) {
+            particles.push(new Particle(this.x + (Math.random() - 0.5) * 12, this.y + 24, '#FF5722'));
+          }
+        }
+
+        if (this.vortexTimer > 0) {
+          this.vortexTimer--;
+          this.angle += (Math.PI * 4) / 30; // 720 degrees over 30 frames
+          players.forEach(v => {
+            if (v !== this && !v.isDead && (this.team === null || v.team !== this.team) && Math.hypot(v.x - this.x, v.y - this.y) < 180) {
+              let pullAngle = Math.atan2(this.y - v.y, this.x - v.x);
+              v.vx += Math.cos(pullAngle) * 4.5;
+              v.vy += Math.sin(pullAngle) * 4.5;
+              v.takeDamage(1.5);
+            }
+          });
+          if (Math.random() < 0.8) particles.push(new Particle(this.x + (Math.random() - 0.5) * 40, this.y + (Math.random() - 0.5) * 40, '#A855F7'));
+        }
 
         const footY = this.y + 40;
         arenaPlatforms.forEach(pf => {
           if (this.x + 20 > pf.x && this.x - 20 < pf.x + pf.w) {
             if (footY >= pf.y && footY - 20 <= pf.y + pf.h) {
               if (this.vy > 0) {
+                if (this.isSlamming) {
+                  this.isSlamming = false;
+                  screenShakeTime = 16;
+                  synth.playClash();
+                  players.forEach(v => {
+                    if (v !== this && !v.isDead && Math.hypot(v.x - this.x, v.y - (this.y + 40)) < 240) {
+                      v.vy = -20;
+                      v.vx += (v.x - this.x > 0 ? 14 : -14);
+                      v.takeDamage(28);
+                    }
+                  });
+                  for (let p = 0; p < 20; p++) particles.push(new Particle(this.x + (Math.random() - 0.5) * 80, pf.y, '#F59E0B'));
+                }
+
                 this.y = pf.y - 40;
                 this.vy = -this.vy * 0.15;
                 this.vx *= 0.85;
@@ -1227,7 +1403,7 @@
 
         const lavaY = getLavaY();
         if (this.y + 35 >= lavaY) {
-          synth.playExplosion();
+          synth.playLavaSizzle();
           this.takeDamage(999, true);
         }
 
@@ -1236,6 +1412,14 @@
 
       takeDamage(amount, isLava = false) {
         if (this.isDead || gameState !== 'PLAYING') return;
+        if (this.invulnerableTimer > 0 && !isLava) return;
+        if (this.shieldHits > 0 && !isLava) {
+          this.shieldHits--;
+          synth.playClash();
+          for (let i = 0; i < 10; i++) particles.push(new Particle(this.x, this.y, '#00E5FF'));
+          return;
+        }
+
         this.hp = Math.max(0, this.hp - amount);
         this.damageFlash = 8;
         synth.playClash();
@@ -1264,7 +1448,7 @@
         const shoulderY = this.y - 8;
         const handX = this.x + Math.cos(aimAngle) * 22;
         const handY = shoulderY + Math.sin(aimAngle) * 22;
-        const weaponLength = this.weapon.length || 36;
+        const weaponLength = (this.weapon ? this.weapon.length : 36) + (this.dragonLungeTimer > 0 ? 30 : 0);
         const tipX = handX + Math.cos(aimAngle) * weaponLength;
         const tipY = handY + Math.sin(aimAngle) * weaponLength;
         return { x1: handX, y1: handY, x2: tipX, y2: tipY };
@@ -1310,21 +1494,21 @@
 
         // 3. TWO RAGDOLL LEGS (Dynamic sway based on velocity)
         const sway = Math.sin(Date.now() * 0.008) * 4 - (this.vx * 1.2);
-        // Left Leg (Hip -> Knee -> Foot)
+        // Left Leg
         ctx.beginPath();
         ctx.moveTo(this.x, hipY);
         ctx.lineTo(this.x - 7 + sway, hipY + 14);
         ctx.lineTo(this.x - 10 + sway * 1.3, hipY + 28);
         ctx.stroke();
 
-        // Right Leg (Hip -> Knee -> Foot)
+        // Right Leg
         ctx.beginPath();
         ctx.moveTo(this.x, hipY);
         ctx.lineTo(this.x + 7 - sway, hipY + 14);
         ctx.lineTo(this.x + 10 - sway * 1.3, hipY + 28);
         ctx.stroke();
 
-        // 4. ARMS & WEAPON HAND (Aim direction)
+        // 4. ARMS & WEAPON HAND
         const shoulderY = this.y - 8;
         const aimAngle = this.angle;
         const handX = this.x + Math.cos(aimAngle) * 22;
@@ -1335,16 +1519,17 @@
         ctx.lineTo(handX, handY);
         ctx.stroke();
 
-        // 5. WEAPON (Mounted directly to the hand)
+        // 5. WEAPON (Mounted directly to hand)
         ctx.save();
         ctx.translate(handX, handY);
         ctx.rotate(aimAngle);
 
-        ctx.strokeStyle = this.weapon.isLegendary ? '#FFD700' : '#00E5FF';
+        ctx.strokeStyle = (this.weapon && this.weapon.isLegendary) ? '#FFD700' : '#00E5FF';
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(this.weapon.length || 36, 0); // Weapon blade/shaft
+        const drawLength = (this.weapon ? this.weapon.length : 36) + (this.dragonLungeTimer > 0 ? 30 : 0);
+        ctx.lineTo(drawLength, 0);
         ctx.stroke();
 
         ctx.strokeStyle = '#ECEFF1';
@@ -1354,6 +1539,19 @@
         ctx.lineTo(2, 0); // Hilt
         ctx.stroke();
         ctx.restore();
+
+        // 6. ENERGY SHIELD BUBBLE
+        if (this.shieldHits > 0) {
+          ctx.save();
+          ctx.strokeStyle = '#00E5FF';
+          ctx.shadowColor = '#00E5FF';
+          ctx.shadowBlur = 12;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 34, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
 
         this.drawHUDTags();
         ctx.restore();
@@ -1549,10 +1747,14 @@
       if (roundEndTimer) clearTimeout(roundEndTimer);
       matchStartTime = Date.now();
       risingLavaOffset = 0;
+      supplyCrates = [];
+      nextCrateSpawnTime = Date.now() + (18000 + Math.random() * 7000);
 
       document.getElementById('main-menu').style.display = 'none';
       document.getElementById('in-game-hud').style.display = 'block';
       document.getElementById('winner-modal').style.display = 'none';
+      const sdBanner = document.getElementById('sudden-death-banner');
+      if (sdBanner) sdBanner.style.display = 'none';
 
       playerScores = [0, 0, 0, 0];
       generateNewProceduralArena();
@@ -1601,7 +1803,7 @@
             playerCoins += 500;
             saveCoins();
             earnedCoinsText = "+500 🪙 COINS EARNED!";
-            synth.playChime();
+            synth.playCoinChime();
 
             // Gold particle shower
             for (let k = 0; k < 25; k++) {
@@ -1630,8 +1832,15 @@
     function startNextRound() {
       if (roundEndTimer) clearTimeout(roundEndTimer);
       gameState = 'PLAYING';
+      matchStartTime = Date.now();
       risingLavaOffset = 0;
+      supplyCrates = [];
+      nextCrateSpawnTime = Date.now() + (18000 + Math.random() * 7000);
+
       document.getElementById('winner-modal').style.display = 'none';
+      const sdBanner = document.getElementById('sudden-death-banner');
+      if (sdBanner) sdBanner.style.display = 'none';
+
       generateNewProceduralArena();
       limbDebris = []; projectiles = [];
       players.forEach(p => p.resetPosition(playerCount));
@@ -1642,7 +1851,7 @@
       gameState = 'MENU';
       if (roundEndTimer) clearTimeout(roundEndTimer);
       players = []; // Wipe players array
-      limbDebris = []; projectiles = [];
+      limbDebris = []; projectiles = []; supplyCrates = [];
 
       document.getElementById('main-menu').style.display = 'flex';
       document.getElementById('in-game-hud').style.display = 'none';
@@ -1715,16 +1924,52 @@
 
           if (lineIntersectsCircle(wLine.x1, wLine.y1, wLine.x2, wLine.y2, victim.x, victim.y, 18)) {
             const hitAngle = Math.atan2(victim.y - wLine.y1, victim.x - wLine.x1);
-            const knockbackForce = attacker.weapon.knockback;
+            const knockbackForce = attacker.dragonLungeTimer > 0 ? attacker.weapon.knockback * 3 : attacker.weapon.knockback;
             victim.vx += Math.cos(hitAngle) * knockbackForce;
             victim.vy += Math.sin(hitAngle) * knockbackForce;
             victim.angularVel += (Math.random() - 0.5) * 0.7;
-            victim.takeDamage(attacker.weapon.damage);
+            victim.takeDamage(attacker.dragonLungeTimer > 0 ? attacker.weapon.damage * 1.4 : attacker.weapon.damage);
             screenShakeTime = 6;
             for (let s = 0; s < 10; s++) particles.push(new Particle(victim.x, victim.y, '#00E5FF'));
           }
         }
       }
+
+      // SUPPLY CRATE COLLISIONS
+      supplyCrates.forEach(crate => {
+        if (crate.isBroken) return;
+        for (let i = 0; i < players.length; i++) {
+          const p = players[i]; if (p.isDead) continue;
+          const wLine = p.getWeaponLine();
+          const weaponHit = lineIntersectsCircle(wLine.x1, wLine.y1, wLine.x2, wLine.y2, crate.x, crate.y, crate.radius);
+          const bodyHit = Math.hypot(p.x - crate.x, p.y - crate.y) < (crate.radius + 18);
+
+          if (weaponHit || bodyHit) {
+            crate.isBroken = true;
+            synth.playCoinChime();
+            screenShakeTime = 6;
+
+            if (crate.type === 'shield') {
+              p.shieldHits = 2;
+              for (let k = 0; k < 15; k++) particles.push(new Particle(crate.x, crate.y, '#00E5FF'));
+            } else if (crate.type === 'thruster') {
+              p.superThrusterTimer = 360; // 6 seconds
+              for (let k = 0; k < 15; k++) particles.push(new Particle(crate.x, crate.y, '#FF5722'));
+            } else if (crate.type === 'health') {
+              p.hp = Math.min(p.maxHp, p.hp + 35);
+              for (let k = 0; k < 15; k++) particles.push(new Particle(crate.x, crate.y, '#4CAF50'));
+            } else if (crate.type === 'coins') {
+              if (!p.isBot) {
+                playerCoins += 250;
+                saveCoins();
+                updateCoinDisplays();
+              }
+              for (let k = 0; k < 15; k++) particles.push(new Particle(crate.x, crate.y, '#FFD54F'));
+            }
+            break;
+          }
+        }
+      });
     }
 
     // -------------------------------------------------------------
@@ -1733,9 +1978,27 @@
     function render() {
       // 1. UPDATE STATE ONLY WHEN PLAYING
       if (gameState === 'PLAYING') {
-        if (selectedMode === 'sudden_death' && Date.now() - matchStartTime > 20000) {
-          risingLavaOffset += 0.35;
+        const elapsedSec = Math.floor((Date.now() - matchStartTime) / 1000);
+        const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+        const ss = String(elapsedSec % 60).padStart(2, '0');
+        const timerElem = document.getElementById('match-timer');
+        if (timerElem) timerElem.innerText = `⏱️ ${mm}:${ss}`;
+
+        const sdBanner = document.getElementById('sudden-death-banner');
+        if (elapsedSec >= 45) {
+          if (sdBanner) sdBanner.style.display = 'block';
+          risingLavaOffset += 0.2; // 12px per second at 60 FPS
+        } else {
+          if (sdBanner) sdBanner.style.display = 'none';
         }
+
+        // Mid-air mystery supply crate spawns
+        if (Date.now() > nextCrateSpawnTime) {
+          supplyCrates.push(new SupplyCrate());
+          nextCrateSpawnTime = Date.now() + (18000 + Math.random() * 7000); // 18-25s
+        }
+        supplyCrates.forEach(c => c.update());
+        supplyCrates = supplyCrates.filter(c => !c.isBroken);
 
         players.forEach(p => p.updateInput());
         players.forEach(p => p.updatePhysics());
@@ -1800,6 +2063,7 @@
           ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.angle);
           ctx.fillStyle = d.color; ctx.fillRect(-6, -6, 12, 12); ctx.restore();
         });
+        supplyCrates.forEach(c => c.draw());
         projectiles.forEach(p => p.draw());
         players.forEach(p => p.draw());
       }
