@@ -961,11 +961,15 @@
       }
 
       getWeaponLine() {
+        const shoulderX = this.x;
         const shoulderY = this.y - 4;
-        const handX = this.x + Math.cos(this.angle) * 22;
-        const handY = shoulderY + Math.sin(this.angle) * 22;
-        const weaponLen = this.weapon.length;
-        return { x1: handX, y1: handY, x2: handX + Math.cos(this.angle) * weaponLen, y2: handY + Math.sin(this.angle) * weaponLen };
+        const armLength = 16;
+        const handX = shoulderX + Math.cos(this.angle) * armLength;
+        const handY = shoulderY + Math.sin(this.angle) * armLength;
+        const weaponLength = this.weapon.length;
+        const tipX = handX + Math.cos(this.angle) * weaponLength;
+        const tipY = handY + Math.sin(this.angle) * weaponLength;
+        return { x1: handX, y1: handY, x2: tipX, y2: tipY };
       }
 
       draw() {
@@ -981,7 +985,7 @@
 
         ctx.lineWidth = 6; ctx.lineCap = 'round';
 
-        // TORSO & HEAD
+        // 1. TORSO & HEAD
         ctx.save();
         ctx.rotate(this.angle + Math.PI / 2);
         ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(0, 16); ctx.stroke();
@@ -992,13 +996,23 @@
         drawHeadHat(ctx, this.hat, 0, -26);
         ctx.restore();
 
-        // SHOULDER & WEAPON
-        const wLine = this.getWeaponLine();
-        ctx.strokeStyle = this.color;
-        ctx.beginPath(); ctx.moveTo(this.x, this.y - 4); ctx.lineTo(wLine.x1, wLine.y1); ctx.stroke();
+        // 2. ARM & WEAPON (STRICTLY LOCKED TO SHOULDER & HAND TRANSFORM)
+        const shoulderX = 0;
+        const shoulderY = -4;
+        const armLength = 16;
+        const handX = shoulderX + Math.cos(this.angle) * armLength;
+        const handY = shoulderY + Math.sin(this.angle) * armLength;
 
-        ctx.lineWidth = 5; ctx.strokeStyle = this.weapon.isLegendary ? '#FFD700' : '#00E5FF';
-        ctx.beginPath(); ctx.moveTo(wLine.x1, wLine.y1); ctx.lineTo(wLine.x2, wLine.y2); ctx.stroke();
+        ctx.strokeStyle = this.color;
+        ctx.beginPath(); ctx.moveTo(shoulderX, shoulderY); ctx.lineTo(handX, handY); ctx.stroke();
+
+        ctx.save();
+        ctx.translate(handX, handY);
+        ctx.rotate(this.angle);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = this.weapon.isLegendary ? '#FFD700' : '#00E5FF';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(this.weapon.length, 0); ctx.stroke();
+        ctx.restore();
 
         this.drawHUDTags();
         ctx.restore();
