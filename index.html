@@ -1000,7 +1000,12 @@
     function setCurrentProfileHat(hat) { playerProfiles[activePlayerTab].hat = hat; saveAllProfiles(); refreshTabUI(); }
     function setCurrentProfileWeapon(weapon) {
       if (!unlockedWeapons.includes(weapon)) return;
-      playerProfiles[activePlayerTab].weapon = weapon;
+      if (playerProfiles[activePlayerTab]) {
+        playerProfiles[activePlayerTab].weapon = weapon;
+      }
+      if (playerProfiles[0]) {
+        playerProfiles[0].weapon = weapon;
+      }
       saveAllProfiles();
       refreshTabUI();
       renderWeaponStore();
@@ -1524,14 +1529,30 @@
           }
         }
 
-        // Apply physics thrust from controls
+        // Apply symmetric, equal physics thrust from controls in ALL directions
         let speedMult = (mutators.speedDemon ? 1.7 : 1.0) * (this.superThrusterTimer > 0 ? 1.4 : 1.0);
-        this.vx += inputX * 0.85 * speedMult;
-        this.vy += inputY * 0.85 * speedMult;
+        const thrustAccel = 1.15 * speedMult;
+        this.vx += inputX * thrustAccel;
+        this.vy += inputY * thrustAccel;
 
         if (inputX !== 0 || inputY !== 0) {
           const targetAngle = Math.atan2(inputY, inputX);
-          this.angle = lerpAngle(this.angle, targetAngle, 0.18);
+          this.angle = lerpAngle(this.angle, targetAngle, 0.20);
+
+          // Directional Thruster Spark Particle Effects
+          if (Math.random() < 0.75) {
+            const sparkCol = this.superThrusterTimer > 0 ? '#00E5FF' : (Math.random() < 0.5 ? '#FF9800' : '#FFD54F');
+            const spread = (Math.random() - 0.5) * 2;
+            particles.push(new Particle(
+              this.x - inputX * 14 + (Math.random() - 0.5) * 4,
+              this.y - inputY * 14 + (Math.random() - 0.5) * 4,
+              sparkCol,
+              -inputX * (3 + Math.random() * 3) + spread,
+              -inputY * (3 + Math.random() * 3) + spread,
+              2.5 + Math.random() * 2.5,
+              0.05 + Math.random() * 0.03
+            ));
+          }
         }
       }
 
@@ -1554,7 +1575,7 @@
           this.vy += Math.sin(this.angle) * 22;
           synth.playLaser();
           for (let i = 0; i < 15; i++) particles.push(new Particle(this.x, this.y, '#38BDF8'));
-        } else if (wCat === 'sickle') {
+        } else if (wCat === 'scythe') {
           // VORTEX SPIN
           this.vortexTimer = 45;
           synth.playClash();
@@ -1585,17 +1606,31 @@
           this.angle += 0.4;
         }
 
-        // Gravity
-        this.vy += mutators.moonGravity ? 0.18 : 0.45;
+        // Balanced gravity for responsive 4-way aerial agility
+        this.vy += mutators.moonGravity ? 0.14 : 0.32;
 
-        // Friction / Drag
-        this.vx *= 0.94;
-        this.vy *= 0.96;
+        // Equalized drag in X and Y
+        this.vx *= 0.93;
+        this.vy *= 0.93;
         this.angularVel *= 0.88;
         this.angle += this.angularVel;
 
         this.x += this.vx;
         this.y += this.vy;
+
+        // High speed motion trail wind streaks
+        const currentSpeed = Math.hypot(this.vx, this.vy);
+        if (currentSpeed > 6.0 && Math.random() < 0.45) {
+          particles.push(new Particle(
+            this.x - this.vx * 1.2,
+            this.y - this.vy * 1.2,
+            'rgba(255, 255, 255, 0.4)',
+            -this.vx * 0.15,
+            -this.vy * 0.15,
+            2 + Math.random() * 2,
+            0.08
+          ));
+        }
 
         // Arena Platform Collisions
         const pRadius = 18;
@@ -1603,6 +1638,20 @@
           if (this.x > pf.x - pRadius && this.x < pf.x + pf.w + pRadius) {
             // Top collision
             if (this.y + pRadius >= pf.y && this.y - pRadius < pf.y + 10 && this.vy > 0) {
+              if (this.vy > 2.5) {
+                // Ground landing impact dust burst
+                for (let k = 0; k < 6; k++) {
+                  particles.push(new Particle(
+                    this.x + (Math.random() - 0.5) * 16,
+                    pf.y - 2,
+                    '#CBD5E1',
+                    (Math.random() - 0.5) * 5,
+                    -Math.random() * 2,
+                    2.5 + Math.random() * 2,
+                    0.07
+                  ));
+                }
+              }
               this.y = pf.y - pRadius;
               this.vy = -this.vy * 0.2; // Bounce
               if (this.isSlamming) {
@@ -1932,17 +1981,33 @@
 
     // PARTICLE FX CLASS
     class Particle {
-      constructor(x, y, color) {
+      constructor(x, y, color, vxOverride, vyOverride, radius, decay) {
         this.x = x; this.y = y; this.color = color;
-        const angle = Math.random() * Math.PI * 2, speed = 2 + Math.random() * 8;
-        this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
-        this.life = 1.0; this.decay = 0.03 + Math.random() * 0.04; this.radius = 3 + Math.random() * 4;
+        if (vxOverride !== undefined && vyOverride !== undefined) {
+          this.vx = vxOverride;
+          this.vy = vyOverride;
+        } else {
+          const angle = Math.random() * Math.PI * 2, speed = 2 + Math.random() * 8;
+          this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+        }
+        this.life = 1.0;
+        this.decay = decay || (0.03 + Math.random() * 0.04);
+        this.radius = radius || (3 + Math.random() * 4);
       }
-      update() { this.x += this.vx; this.y += this.vy; this.vy += 0.2; this.life -= this.decay; }
+      update() {
+        this.x += this.vx; this.y += this.vy;
+        this.vy += 0.06; // Light gravity
+        this.life -= this.decay;
+      }
       draw() {
         if (this.life <= 0) return;
-        ctx.save(); ctx.globalAlpha = this.life; ctx.fillStyle = this.color;
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.life);
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(0.5, this.radius * this.life), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
     }
 
@@ -1996,12 +2061,19 @@
       limbDebris = [];
       projectiles = [];
 
+      const equippedWep = (playerProfiles[activePlayerTab] && playerProfiles[activePlayerTab].weapon) || (playerProfiles[0] && playerProfiles[0].weapon) || 'katana';
+
       for (let i = 0; i < playerCount; i++) {
-        const profile = playerProfiles[i];
-        let isBot = false, name = profile.name, color = profile.color, hat = profile.hat, weapon = profile.weapon;
+        const profile = playerProfiles[i] || {};
+        let isBot = false, name = profile.name, color = profile.color, hat = profile.hat, weapon = profile.weapon || equippedWep;
         if (isBotMode) {
-          if (i === botConfig.humanSlot) { isBot = false; }
-          else { isBot = true; name = BOT_NAMES[i % BOT_NAMES.length]; }
+          if (i === botConfig.humanSlot) {
+            isBot = false;
+            weapon = equippedWep;
+          } else {
+            isBot = true;
+            name = BOT_NAMES[i % BOT_NAMES.length];
+          }
         }
         players.push(new Player(i, playerCount, isBot, name, color, hat, weapon));
       }
