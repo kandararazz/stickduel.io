@@ -623,10 +623,225 @@
     function getWeaponCategory(id) {
       if (!id) return 'katana';
       const name = id.toLowerCase();
-      if (name.includes('hammer') || name.includes('club') || name.includes('mace') || name.includes('bat') || name.includes('pipe') || name.includes('crowbar') || name.includes('mallet') || name.includes('flail') || name.includes('fist') || name.includes('wrench') || name.includes('pan') || name.includes('guitar') || name.includes('anchor') || name.includes('smasher')) return 'hammer';
-      if (name.includes('spear') || name.includes('pike') || name.includes('trident') || name.includes('lance') || name.includes('halberd') || name.includes('glaive') || name.includes('harpoon') || name.includes('pitchfork')) return 'spear';
-      if (name.includes('scythe') || name.includes('sickle')) return 'sickle';
+      if (name.includes('hammer') || name.includes('club') || name.includes('mace') || name.includes('bat') || name.includes('pipe') || name.includes('crowbar') || name.includes('mallet') || name.includes('flail') || name.includes('fist') || name.includes('wrench') || name.includes('pan') || name.includes('guitar') || name.includes('anchor') || name.includes('smasher') || name.includes('axe') || name.includes('pickaxe') || name.includes('saw') || name.includes('shovel')) return 'hammer';
+      if (name.includes('spear') || name.includes('pike') || name.includes('trident') || name.includes('lance') || name.includes('halberd') || name.includes('glaive') || name.includes('harpoon') || name.includes('pitchfork') || name.includes('staff') || name.includes('wand') || name.includes('broom')) return 'spear';
+      if (name.includes('scythe') || name.includes('sickle') || name.includes('reaper')) return 'scythe';
+      if (name.includes('dagger') || name.includes('tanto') || name.includes('kunai') || name.includes('dirk') || name.includes('fang') || name.includes('knife')) return 'dagger';
       return 'katana';
+    }
+
+    function drawWeaponShape(ctx, weapon, extraLength = 0, scale = 1.0) {
+      if (!weapon) weapon = (typeof WEAPONS !== 'undefined' && WEAPONS['katana']) ? WEAPONS['katana'] : { id: 'katana', color: '#00E5FF', length: 38 };
+
+      ctx.save();
+      if (scale !== 1.0) {
+        ctx.scale(scale, scale);
+      }
+
+      const category = getWeaponCategory(weapon.id);
+      const totalLength = (weapon.length || 36) + extraLength;
+      const mainColor = weapon.color || '#00E5FF';
+      const isLegendary = weapon.isLegendary || (weapon.price && weapon.price >= 5000);
+
+      if (isLegendary) {
+        ctx.shadowColor = mainColor;
+        ctx.shadowBlur = 8;
+      }
+
+      const name = (weapon.id || '').toLowerCase();
+
+      switch (category) {
+        case 'hammer': {
+          ctx.strokeStyle = '#71717A';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(totalLength - 12, 0);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#18181B';
+          ctx.lineWidth = 4.5;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(2, 0);
+          ctx.stroke();
+
+          const headW = 18;
+          const headH = 20;
+          const headX = totalLength - 12;
+
+          ctx.fillStyle = mainColor;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1.5;
+
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(headX, -headH / 2, headW, headH, 3);
+          } else {
+            ctx.rect(headX, -headH / 2, headW, headH);
+          }
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.fillRect(headX + 3, -headH / 2 + 3, headW - 6, 4);
+
+          if (name.includes('mace') || name.includes('star') || name.includes('spiked') || name.includes('axe')) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath(); ctx.moveTo(headX + headW/2 - 3, -headH/2); ctx.lineTo(headX + headW/2, -headH/2 - 6); ctx.lineTo(headX + headW/2 + 3, -headH/2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(headX + headW/2 - 3, headH/2); ctx.lineTo(headX + headW/2, headH/2 + 6); ctx.lineTo(headX + headW/2 + 3, headH/2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(headX + headW, -3); ctx.lineTo(headX + headW + 7, 0); ctx.lineTo(headX + headW, 3); ctx.fill();
+          }
+          break;
+        }
+
+        case 'spear': {
+          const headLength = name.includes('trident') ? 22 : 18;
+          ctx.strokeStyle = '#A1A1AA';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(totalLength - headLength, 0);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#27272A';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(4, 0);
+          ctx.stroke();
+
+          const tipX = totalLength - headLength;
+
+          if (name.includes('trident')) {
+            ctx.strokeStyle = mainColor;
+            ctx.fillStyle = mainColor;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(tipX, 0); ctx.lineTo(totalLength + 6, 0); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(tipX, -7); ctx.lineTo(totalLength + 2, -7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(tipX, 7); ctx.lineTo(totalLength + 2, 7); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(tipX, -8); ctx.lineTo(tipX, 8); ctx.stroke();
+          } else {
+            ctx.fillStyle = mainColor;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(tipX, -6.5);
+            ctx.lineTo(totalLength + 6, 0);
+            ctx.lineTo(tipX, 6.5);
+            ctx.lineTo(tipX + 4, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+          break;
+        }
+
+        case 'scythe': {
+          ctx.strokeStyle = '#52525B';
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(totalLength - 4, 0);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#18181B';
+          ctx.lineWidth = 4.5;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(2, 0);
+          ctx.stroke();
+
+          const headX = totalLength - 8;
+          ctx.fillStyle = mainColor;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1.2;
+
+          ctx.beginPath();
+          ctx.moveTo(headX, -2);
+          ctx.quadraticCurveTo(headX + 6, -18, headX + 16, -26);
+          ctx.quadraticCurveTo(headX - 4, -22, headX - 8, -4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          break;
+        }
+
+        case 'dagger': {
+          ctx.strokeStyle = '#27272A';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(-6, 0);
+          ctx.lineTo(0, 0);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#E4E4E7';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -6);
+          ctx.lineTo(0, 6);
+          ctx.stroke();
+
+          ctx.fillStyle = mainColor;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -4);
+          ctx.lineTo(totalLength, 0);
+          ctx.lineTo(0, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(2, 0);
+          ctx.lineTo(totalLength - 6, 0);
+          ctx.stroke();
+          break;
+        }
+
+        case 'katana':
+        default: {
+          ctx.strokeStyle = '#18181B';
+          ctx.lineWidth = 4.5;
+          ctx.beginPath();
+          ctx.moveTo(-7, 0);
+          ctx.lineTo(0, 0);
+          ctx.stroke();
+
+          ctx.fillStyle = '#E4E4E7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = mainColor;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 1;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -3);
+          ctx.lineTo(totalLength - 6, -2.5);
+          ctx.lineTo(totalLength, 0);
+          ctx.lineTo(totalLength - 6, 2.5);
+          ctx.lineTo(0, 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(2, -1);
+          ctx.lineTo(totalLength - 4, -0.5);
+          ctx.stroke();
+          break;
+        }
+      }
+
+      ctx.restore();
     }
 
     class SupplyCrate {
@@ -1110,12 +1325,25 @@
         const tierLabel = w.price === 0 ? 'FREE' : w.price < 3000 ? 'RARE' : w.price < 6000 ? 'EPIC' : 'GOD TIER';
 
         card.innerHTML = `
-          <div class="weapon-icon">${w.emoji}</div>
+          <div style="position:relative; width:100%; height:42px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); border-radius:8px; margin-bottom:6px; overflow:hidden;">
+            <canvas id="w-canvas-${w.id}" width="100" height="38" style="pointer-events:none;"></canvas>
+            <span style="position:absolute; right:6px; bottom:2px; font-size:1.1rem; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">${w.emoji}</span>
+          </div>
           <div class="weapon-name" title="${w.name}">${w.name}</div>
           <div class="weapon-tag">${tierLabel}</div>
           ${statusHtml}
         `;
         grid.appendChild(card);
+
+        const canvasElem = card.querySelector(`#w-canvas-${w.id}`);
+        if (canvasElem) {
+          const cctx = canvasElem.getContext('2d');
+          cctx.clearRect(0, 0, 100, 38);
+          cctx.save();
+          cctx.translate(14, 19);
+          drawWeaponShape(cctx, w, 0, 0.82);
+          cctx.restore();
+        }
       });
     }
 
@@ -1518,25 +1746,14 @@
         ctx.lineTo(handX, handY);
         ctx.stroke();
 
-        // 5. WEAPON (Mounted directly to hand)
+        // 5. WEAPON (Mounted directly to hand joint)
         ctx.save();
         ctx.translate(handX, handY);
         ctx.rotate(aimAngle);
 
-        ctx.strokeStyle = (this.weapon && this.weapon.isLegendary) ? '#FFD700' : '#00E5FF';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(0, 0);
-        const drawLength = (this.weapon ? this.weapon.length : 36) + (this.dragonLungeTimer > 0 ? 30 : 0);
-        ctx.lineTo(drawLength, 0);
-        ctx.stroke();
+        const extraL = (this.dragonLungeTimer > 0 ? 30 : 0);
+        drawWeaponShape(ctx, this.weapon, extraL, 1.0);
 
-        ctx.strokeStyle = '#ECEFF1';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.moveTo(-6, 0);
-        ctx.lineTo(2, 0); // Hilt
-        ctx.stroke();
         ctx.restore();
 
         // 6. ENERGY SHIELD BUBBLE
@@ -1758,6 +1975,7 @@
     }
 
     function launchMatchInternal(isBotMode) {
+      loadAllProfiles();
       gameState = 'PLAYING';
       if (roundEndTimer) clearTimeout(roundEndTimer);
       matchStartTime = Date.now();
