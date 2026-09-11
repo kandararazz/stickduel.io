@@ -695,10 +695,21 @@
 
     window.addEventListener('keydown', (e) => {
       activeKeys[e.key] = true;
-      if (e.key === ' ' || e.key === 'Shift') triggerSpecial(0);
-      if (e.key === 'Enter') triggerSpecial(1);
+      activeKeys[e.code] = true;
+      if (typeof gameState !== 'undefined' && gameState === 'PLAYING') {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Space', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+          if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+          }
+        }
+      }
+      if (e.key === ' ' || e.key === 'Shift' || e.code === 'Space' || e.code === 'ShiftLeft') triggerSpecial(0);
+      if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter') triggerSpecial(1);
     });
-    window.addEventListener('keyup', (e) => { activeKeys[e.key] = false; });
+    window.addEventListener('keyup', (e) => {
+      activeKeys[e.key] = false;
+      activeKeys[e.code] = false;
+    });
 
     function saveAllProfiles() {
       try { localStorage.setItem('supreme_duelist_profiles', JSON.stringify(playerProfiles)); } catch(e) {}
@@ -738,23 +749,40 @@
     // MODAL CONTROL FUNCTIONS
     // -------------------------------------------------------------
     function openLockerModal() { document.getElementById('locker-modal').style.display = 'flex'; updateCoinDisplays(); switchPlayerTab(activePlayerTab); renderWeaponStore(); }
-    function saveLockerAndClose() { savePlayerProfile(activePlayerTab, playerProfiles[activePlayerTab]); document.getElementById('locker-modal').style.display = 'none'; }
-    function switchPlayerTab(index) { activePlayerTab = index; refreshTabUI(); }
+    function saveLockerAndClose() { updateCurrentProfileName(); savePlayerProfile(activePlayerTab, playerProfiles[activePlayerTab]); document.getElementById('locker-modal').style.display = 'none'; }
+    function switchPlayerTab(index) { updateCurrentProfileName(); activePlayerTab = index; refreshTabUI(); }
     function refreshTabUI() {
+      const colors = ['🔴', '🔵', '🟢', '🟡'];
       for (let i = 0; i < 4; i++) {
         const tabBtn = document.getElementById(`tab-p${i}`);
-        if (tabBtn) tabBtn.className = `tab-btn ${i === activePlayerTab ? 'active-p' + i : ''}`;
+        if (tabBtn) {
+          tabBtn.className = `tab-btn ${i === activePlayerTab ? 'active-p' + i : ''}`;
+          const pName = (playerProfiles[i] && playerProfiles[i].name && playerProfiles[i].name.trim()) ? playerProfiles[i].name.trim() : `Player ${i + 1}`;
+          tabBtn.innerText = `${colors[i]} ${pName.toUpperCase()}`;
+        }
       }
       const p = playerProfiles[activePlayerTab];
       const nameInput = document.getElementById('locker-name-input');
-      if (nameInput) nameInput.value = p.name;
+      if (nameInput) nameInput.value = (p && p.name !== undefined) ? p.name : `Player ${activePlayerTab + 1}`;
       document.querySelectorAll('#color-palette .color-swatch').forEach(sw => sw.classList.toggle('active', sw.getAttribute('data-color') === p.color));
       document.querySelectorAll('#hat-selector .chip-btn').forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-hat') === p.hat));
       renderWeaponStore();
     }
-    function updateCurrentProfileName() { const val = document.getElementById('locker-name-input').value.trim(); playerProfiles[activePlayerTab].name = val || `Player ${activePlayerTab + 1}`; }
-    function setCurrentProfileColor(color) { playerProfiles[activePlayerTab].color = color; refreshTabUI(); }
-    function setCurrentProfileHat(hat) { playerProfiles[activePlayerTab].hat = hat; refreshTabUI(); }
+    function updateCurrentProfileName() {
+      const inputElem = document.getElementById('locker-name-input');
+      if (!inputElem) return;
+      const val = inputElem.value;
+      playerProfiles[activePlayerTab].name = val;
+      saveAllProfiles();
+      const tabBtn = document.getElementById(`tab-p${activePlayerTab}`);
+      const colors = ['🔴', '🔵', '🟢', '🟡'];
+      if (tabBtn) {
+        const displayName = val.trim() || `Player ${activePlayerTab + 1}`;
+        tabBtn.innerText = `${colors[activePlayerTab]} ${displayName.toUpperCase()}`;
+      }
+    }
+    function setCurrentProfileColor(color) { playerProfiles[activePlayerTab].color = color; saveAllProfiles(); refreshTabUI(); }
+    function setCurrentProfileHat(hat) { playerProfiles[activePlayerTab].hat = hat; saveAllProfiles(); refreshTabUI(); }
     function setCurrentProfileWeapon(weapon) {
       if (!unlockedWeapons.includes(weapon)) return;
       playerProfiles[activePlayerTab].weapon = weapon;
@@ -1131,8 +1159,12 @@
     // -------------------------------------------------------------
     class Player {
       constructor(index, total, isBot, customName, customColor, customHat, customWeapon) {
-        this.index = index; this.name = customName; this.color = customColor;
-        this.hat = customHat; this.weaponType = customWeapon; this.weapon = WEAPONS[customWeapon] || WEAPONS['katana'];
+        this.index = index;
+        this.name = (customName && customName.trim()) ? customName.trim() : `Player ${index + 1}`;
+        this.color = customColor || '#111111';
+        this.hat = customHat || 'none';
+        this.weaponType = customWeapon || 'katana';
+        this.weapon = WEAPONS[this.weaponType] || WEAPONS['katana'];
         this.isBot = isBot;
 
         this.hp = mutators.oneHitKo ? 1 : selectedMode === 'juggernaut' && index === 0 ? 200 : 100;
@@ -1226,16 +1258,37 @@
         } else {
           inputX = this.joyX; inputY = this.joyY;
           let kx = 0, ky = 0;
-          if (this.index === 0) {
-            if (activeKeys['a'] || activeKeys['A']) kx -= 1;
-            if (activeKeys['d'] || activeKeys['D']) kx += 1;
-            if (activeKeys['w'] || activeKeys['W']) ky -= 1;
-            if (activeKeys['s'] || activeKeys['S']) ky += 1;
-          } else if (this.index === 1) {
-            if (activeKeys['ArrowLeft']) kx -= 1;
-            if (activeKeys['ArrowRight']) kx += 1;
-            if (activeKeys['ArrowUp']) ky -= 1;
-            if (activeKeys['ArrowDown']) ky += 1;
+          const humanCount = players ? players.filter(p => !p.isBot).length : 1;
+
+          if (humanCount <= 1) {
+            // Single player: Support WASD AND Arrow keys for full UP, DOWN, LEFT, RIGHT control
+            if (activeKeys['a'] || activeKeys['A'] || activeKeys['KeyA'] || activeKeys['ArrowLeft']) kx -= 1;
+            if (activeKeys['d'] || activeKeys['D'] || activeKeys['KeyD'] || activeKeys['ArrowRight']) kx += 1;
+            if (activeKeys['w'] || activeKeys['W'] || activeKeys['KeyW'] || activeKeys['ArrowUp']) ky -= 1;
+            if (activeKeys['s'] || activeKeys['S'] || activeKeys['KeyS'] || activeKeys['ArrowDown']) ky += 1;
+          } else {
+            // Local Multiplayer control mapping
+            if (this.index === 0) {
+              if (activeKeys['a'] || activeKeys['A'] || activeKeys['KeyA']) kx -= 1;
+              if (activeKeys['d'] || activeKeys['D'] || activeKeys['KeyD']) kx += 1;
+              if (activeKeys['w'] || activeKeys['W'] || activeKeys['KeyW']) ky -= 1;
+              if (activeKeys['s'] || activeKeys['S'] || activeKeys['KeyS']) ky += 1;
+            } else if (this.index === 1) {
+              if (activeKeys['ArrowLeft']) kx -= 1;
+              if (activeKeys['ArrowRight']) kx += 1;
+              if (activeKeys['ArrowUp']) ky -= 1;
+              if (activeKeys['ArrowDown']) ky += 1;
+            } else if (this.index === 2) {
+              if (activeKeys['j'] || activeKeys['J'] || activeKeys['KeyJ']) kx -= 1;
+              if (activeKeys['l'] || activeKeys['L'] || activeKeys['KeyL']) kx += 1;
+              if (activeKeys['i'] || activeKeys['I'] || activeKeys['KeyI']) ky -= 1;
+              if (activeKeys['k'] || activeKeys['K'] || activeKeys['KeyK']) ky += 1;
+            } else if (this.index === 3) {
+              if (activeKeys['f'] || activeKeys['F'] || activeKeys['KeyF'] || activeKeys['Numpad4']) kx -= 1;
+              if (activeKeys['h'] || activeKeys['H'] || activeKeys['KeyH'] || activeKeys['Numpad6']) kx += 1;
+              if (activeKeys['t'] || activeKeys['T'] || activeKeys['KeyT'] || activeKeys['Numpad8']) ky -= 1;
+              if (activeKeys['g'] || activeKeys['G'] || activeKeys['KeyG'] || activeKeys['Numpad5']) ky += 1;
+            }
           }
           if (kx !== 0 || ky !== 0) {
             let klen = Math.hypot(kx, ky);
@@ -1243,177 +1296,122 @@
           }
         }
 
-        const inputMag = Math.hypot(inputX, inputY);
-        if (inputMag > 0.1) {
+        // Apply physics thrust from controls
+        let speedMult = (mutators.speedDemon ? 1.7 : 1.0) * (this.superThrusterTimer > 0 ? 1.4 : 1.0);
+        this.vx += inputX * 0.85 * speedMult;
+        this.vy += inputY * 0.85 * speedMult;
+
+        if (inputX !== 0 || inputY !== 0) {
           const targetAngle = Math.atan2(inputY, inputX);
-          this.angle = lerpAngle(this.angle, targetAngle, 0.22);
-          let thrust = (this.weapon ? this.weapon.thrustBonus : 1.6) * (mutators.speedDemon ? 2.0 : 1.0) * (this.superThrusterTimer > 0 ? 2.0 : 1.0);
-          if (this.isBot) thrust *= (botConfig.difficulty === 'easy' ? 0.75 : botConfig.difficulty === 'hard' ? 1.35 : 1.0);
-
-          this.vx += Math.cos(this.angle) * thrust;
-          this.vy += Math.sin(this.angle) * thrust;
-        } else {
-          this.angle = lerpAngle(this.angle, -Math.PI / 2, 0.1);
+          this.angle = lerpAngle(this.angle, targetAngle, 0.18);
         }
-
-        if (this.specialCooldown > 0) this.specialCooldown--;
-        if (this.specialActiveFrames > 0) this.specialActiveFrames--;
       }
 
       triggerSpecial() {
         if (this.isDead || this.specialCooldown > 0 || gameState !== 'PLAYING') return;
-        this.specialCooldown = 280; // ~4.6 second cooldown
-        this.specialActiveFrames = 20;
+        this.specialCooldown = 180; // 3 second cooldown
 
-        const category = getWeaponCategory(this.weaponType);
-        synth.playCoinChime();
-
-        if (category === 'katana') {
-          // SHADOW FLASH: Teleport 160px forward + slash opponents + 0.3s invulnerability
-          const dashDist = 160;
-          const startX = this.x, startY = this.y;
-          const endX = this.x + Math.cos(this.angle) * dashDist;
-          const endY = this.y + Math.sin(this.angle) * dashDist;
-
-          this.x = Math.min(Math.max(30, endX), canvas.width - 30);
-          this.y = Math.min(Math.max(35, endY), canvas.height - 35);
-          this.vx = Math.cos(this.angle) * 14;
-          this.vy = Math.sin(this.angle) * 14;
-          this.invulnerableTimer = 18; // 0.3s invulnerability
-
-          players.forEach(victim => {
-            if (victim !== this && !victim.isDead && (this.team === null || victim.team !== this.team)) {
-              if (lineIntersectsCircle(startX, startY, this.x, this.y, victim.x, victim.y, 32)) {
-                victim.takeDamage(35);
-                victim.vx += Math.cos(this.angle) * 22;
-                victim.vy += Math.sin(this.angle) * 22;
-                for (let s = 0; s < 12; s++) particles.push(new Particle(victim.x, victim.y, '#00E5FF'));
-              }
-            }
-          });
-          for (let s = 0; s < 18; s++) {
-            const t = Math.random();
-            particles.push(new Particle(startX + (this.x - startX) * t, startY + (this.y - startY) * t, '#00E5FF'));
-          }
-          synth.playSwoosh();
-        } else if (category === 'hammer') {
-          // SEISMIC SLAM: Accelerates downward 3x speed + radial shockwave on platform hit
-          this.vy = 28;
+        const wCat = getWeaponCategory(this.weaponType);
+        if (wCat === 'hammer') {
+          // SLAM WAVE
           this.isSlamming = true;
-          synth.playSwoosh();
-        } else if (category === 'spear') {
-          // DRAGON LUNGE: 120px extended thrust with 3x knockback force
-          const lungeSpeed = 24;
-          this.vx += Math.cos(this.angle) * lungeSpeed;
-          this.vy += Math.sin(this.angle) * lungeSpeed;
-          this.dragonLungeTimer = 22;
-          this.invulnerableTimer = 10;
-          for (let s = 0; s < 14; s++) particles.push(new Particle(this.x, this.y, '#10B981'));
-          synth.playSwoosh();
-        } else if (category === 'sickle') {
-          // VORTEX WHIRLWIND: 720° spin over 0.5s + deflects strikes + pulls enemies in
-          this.vortexTimer = 30; // 0.5s @ 60fps
-          this.invulnerableTimer = 30;
-          synth.playSwoosh();
+          this.vy = 18;
+          screenShakeTime = 12;
+          synth.playExplosion();
+          for (let i = 0; i < 20; i++) particles.push(new Particle(this.x, this.y + 20, '#F59E0B'));
+        } else if (wCat === 'spear') {
+          // DRAGON LUNGE
+          this.dragonLungeTimer = 30;
+          this.vx += Math.cos(this.angle) * 22;
+          this.vy += Math.sin(this.angle) * 22;
+          synth.playLaser();
+          for (let i = 0; i < 15; i++) particles.push(new Particle(this.x, this.y, '#38BDF8'));
+        } else if (wCat === 'sickle') {
+          // VORTEX SPIN
+          this.vortexTimer = 45;
+          synth.playClash();
+          for (let i = 0; i < 18; i++) particles.push(new Particle(this.x, this.y, '#39FF14'));
+        } else {
+          // KATANA DASH / SHADOW STEP
+          this.invulnerableTimer = 25;
+          this.vx += Math.cos(this.angle) * 26;
+          this.vy += Math.sin(this.angle) * 26;
+          synth.playLaser();
+          for (let i = 0; i < 20; i++) particles.push(new Particle(this.x, this.y, '#00E5FF'));
         }
       }
 
       updatePhysics() {
         if (this.isDead || gameState !== 'PLAYING') return;
 
-        this.angle += this.angularVel;
-        this.angularVel *= 0.88;
+        this.updateInput();
 
-        const grav = mutators.moonGravity ? 0.08 : 0.25;
-        this.vy += grav;
-        this.vx *= (this.weapon ? this.weapon.drag : 0.94);
-        this.vy *= (this.weapon ? this.weapon.drag : 0.94);
+        // Timers
+        if (this.damageFlash > 0) this.damageFlash--;
+        if (this.specialCooldown > 0) this.specialCooldown--;
+        if (this.invulnerableTimer > 0) this.invulnerableTimer--;
+        if (this.superThrusterTimer > 0) this.superThrusterTimer--;
+        if (this.dragonLungeTimer > 0) this.dragonLungeTimer--;
+        if (this.vortexTimer > 0) {
+          this.vortexTimer--;
+          this.angle += 0.4;
+        }
+
+        // Gravity
+        this.vy += mutators.moonGravity ? 0.18 : 0.45;
+
+        // Friction / Drag
+        this.vx *= 0.94;
+        this.vy *= 0.96;
+        this.angularVel *= 0.88;
+        this.angle += this.angularVel;
 
         this.x += this.vx;
         this.y += this.vy;
 
-        const bounceDamping = 0.75;
-        if (this.x < 30) { this.x = 30; this.vx = -this.vx * bounceDamping; }
-        if (this.x > canvas.width - 30) { this.x = canvas.width - 30; this.vx = -this.vx * bounceDamping; }
-        if (this.y < 35) { this.y = 35; this.vy = -this.vy * bounceDamping; }
-
-        if (this.invulnerableTimer > 0) this.invulnerableTimer--;
-        if (this.dragonLungeTimer > 0) this.dragonLungeTimer--;
-
-        if (this.superThrusterTimer > 0) {
-          this.superThrusterTimer--;
-          if (Math.hypot(this.vx, this.vy) > 0.5 && Math.random() < 0.6) {
-            particles.push(new Particle(this.x + (Math.random() - 0.5) * 12, this.y + 24, '#FF5722'));
-          }
-        }
-
-        if (this.vortexTimer > 0) {
-          this.vortexTimer--;
-          this.angle += (Math.PI * 4) / 30; // 720 degrees over 30 frames
-          players.forEach(v => {
-            if (v !== this && !v.isDead && (this.team === null || v.team !== this.team) && Math.hypot(v.x - this.x, v.y - this.y) < 180) {
-              let pullAngle = Math.atan2(this.y - v.y, this.x - v.x);
-              v.vx += Math.cos(pullAngle) * 4.5;
-              v.vy += Math.sin(pullAngle) * 4.5;
-              v.takeDamage(1.5);
-            }
-          });
-          if (Math.random() < 0.8) particles.push(new Particle(this.x + (Math.random() - 0.5) * 40, this.y + (Math.random() - 0.5) * 40, '#A855F7'));
-        }
-
-        const footY = this.y + 40;
+        // Arena Platform Collisions
+        const pRadius = 18;
         arenaPlatforms.forEach(pf => {
-          if (this.x + 20 > pf.x && this.x - 20 < pf.x + pf.w) {
-            if (footY >= pf.y && footY - 20 <= pf.y + pf.h) {
-              if (this.vy > 0) {
-                if (this.isSlamming) {
-                  this.isSlamming = false;
-                  screenShakeTime = 16;
-                  synth.playClash();
-                  players.forEach(v => {
-                    if (v !== this && !v.isDead && Math.hypot(v.x - this.x, v.y - (this.y + 40)) < 240) {
-                      v.vy = -20;
-                      v.vx += (v.x - this.x > 0 ? 14 : -14);
-                      v.takeDamage(28);
-                    }
-                  });
-                  for (let p = 0; p < 20; p++) particles.push(new Particle(this.x + (Math.random() - 0.5) * 80, pf.y, '#F59E0B'));
-                }
-
-                this.y = pf.y - 40;
-                this.vy = -this.vy * 0.15;
-                this.vx *= 0.85;
-
-                if (pf.jumpPad && Math.abs(this.x - (pf.x + pf.w / 2)) > pf.w / 2 - 25) {
-                  this.vy = -18;
-                  synth.playSwoosh();
-                  for (let i = 0; i < 8; i++) particles.push(new Particle(this.x, this.y, '#00E5FF'));
-                }
-
-                if (pf.isCrumbling) {
-                  pf.crumbleTime++;
-                  if (pf.crumbleTime > 120) {
-                    pf.y += 4;
-                    for (let c = 0; c < 3; c++) particles.push(new Particle(pf.x + Math.random() * pf.w, pf.y, '#64748B'));
+          if (this.x > pf.x - pRadius && this.x < pf.x + pf.w + pRadius) {
+            // Top collision
+            if (this.y + pRadius >= pf.y && this.y - pRadius < pf.y + 10 && this.vy > 0) {
+              this.y = pf.y - pRadius;
+              this.vy = -this.vy * 0.2; // Bounce
+              if (this.isSlamming) {
+                this.isSlamming = false;
+                screenShakeTime = 16;
+                synth.playExplosion();
+                // Ground shockwave
+                for (let k = 0; k < 25; k++) particles.push(new Particle(this.x, this.y + pRadius, '#FFD54F'));
+                // Damage nearby enemies
+                players.forEach(other => {
+                  if (other !== this && !other.isDead && Math.hypot(other.x - this.x, other.y - this.y) < 130) {
+                    other.vx += (other.x > this.x ? 1 : -1) * 16;
+                    other.vy -= 12;
+                    other.takeDamage(35);
                   }
-                }
+                });
               }
             }
           }
         });
 
-        const lavaY = getLavaY();
-        if (this.y + 35 >= lavaY) {
-          synth.playLavaSizzle();
-          this.takeDamage(999, true);
-        }
+        // Screen Boundaries (Left/Right wall bounce)
+        if (this.x < pRadius) { this.x = pRadius; this.vx = -this.vx * 0.5; }
+        if (this.x > canvas.width - pRadius) { this.x = canvas.width - pRadius; this.vx = -this.vx * 0.5; }
 
-        if (this.damageFlash > 0) this.damageFlash--;
+        // Rising Lava Hazard Damage Check
+        const lavaY = getLavaY();
+        if (this.y + pRadius >= lavaY) {
+          this.takeDamage(100, true);
+        }
       }
 
       takeDamage(amount, isLava = false) {
         if (this.isDead || gameState !== 'PLAYING') return;
+
         if (this.invulnerableTimer > 0 && !isLava) return;
+
         if (this.shieldHits > 0 && !isLava) {
           this.shieldHits--;
           synth.playClash();
@@ -1565,10 +1563,15 @@
         const barY = this.y - 48; // Exactly 48px above character center
 
         // 1. Player Name
+        const nameToDraw = (this.name && this.name.trim()) ? this.name.trim() : `Player ${this.index + 1}`;
+        ctx.save();
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '900 11px Outfit, sans-serif';
+        ctx.font = '900 12px "Outfit", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(this.name, this.x, barY - 4);
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(nameToDraw, this.x, barY - 5);
+        ctx.restore();
 
         // 2. Health Bar Background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
@@ -1638,14 +1641,25 @@
       previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
       const cx = previewCanvas.width / 2, cy = previewCanvas.height / 2 + 5;
       const bob = Math.sin(Date.now() * 0.005) * 3;
-      const curProfile = playerProfiles[activePlayerTab];
+      const curProfile = playerProfiles[activePlayerTab] || {};
       previewCtx.save();
       previewCtx.translate(cx, cy + bob);
-      previewCtx.strokeStyle = curProfile.color;
-      previewCtx.fillStyle = curProfile.color;
+      previewCtx.strokeStyle = curProfile.color || '#111111';
+      previewCtx.fillStyle = curProfile.color || '#111111';
       previewCtx.lineWidth = 5;
       previewCtx.lineCap = 'round';
       previewCtx.lineJoin = 'round';
+
+      // 0. Name Tag Preview
+      const pName = (curProfile.name && curProfile.name.trim()) ? curProfile.name.trim() : `Player ${activePlayerTab + 1}`;
+      previewCtx.save();
+      previewCtx.fillStyle = '#FFFFFF';
+      previewCtx.font = '900 11px "Outfit", sans-serif';
+      previewCtx.textAlign = 'center';
+      previewCtx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      previewCtx.shadowBlur = 4;
+      previewCtx.fillText(pName, 0, -42);
+      previewCtx.restore();
 
       // 1. Head & Eye
       const headY = -24;
